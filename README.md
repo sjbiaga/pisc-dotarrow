@@ -57,16 +57,14 @@ The first two are used in the two shell functions, `dotarrowStream`, respectivel
 `dotarrowStream2`, while the third is copied initially as the object serialization
 (temporary) binary file.
 
-And three files for "`circe`" `JSON` serialization:
+And two files for "`circe`" `JSON` serialization:
 
     ../dotarrow/circe/
        app.scala.in
        app2.scala.in
-       json.in
 
-The first two are used in the two shell functions, `dotarrowCirce`, respectively,
-`dotarrowCirce2`, while the third is copied initially as the `JSON` serialization
-(temporary) text file.
+These two are used in the two shell functions, `dotarrowCirce`, respectively,
+`dotarrowCirce2`.
 
 !!!Warning: do not delete them!!!
 
@@ -231,5 +229,6 @@ The `Scala` source files must have even a stricter format:
 Note that both [`Scala Cli`](https://scala-cli.virtuslab.org/)
 and [`Ammonite`](https://ammonite.io/) must be installed, as well as
 [`Stack`](https://hackage.haskell.org/package/stack). Also, the
- `Perl`script `bin/Scalameta2Haskell.pl` must be available in the `PATH`.
+`Perl`script [`bin/Scalameta2Haskell.pl`](https://github.com/sjbiaga/pisc-dotarrow/blob/main/bin/Scalameta2Haskell.pl)
+must be available in the `PATH`.
 
