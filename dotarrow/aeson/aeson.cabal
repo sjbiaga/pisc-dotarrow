@@ -23,6 +23,7 @@ executable Main
 
     build-depends:
         base ^>=4.18,
+        containers ^>=0.6,
         haskell-src-meta ^>=0.8,
         template-haskell ^>=2.20
 

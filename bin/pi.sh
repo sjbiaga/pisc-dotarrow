@@ -58,33 +58,74 @@ function pio() {
     done
 }
 
+function dotarrowCount() {
+    expr $(cat "$1" | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
+}
+
+function dotarrowCountPreLast() {
+    if [ `cat "$1" | tail -n 2 | wc -l` -eq 2 ]
+    then
+        expr $(cat "$1" | tail -n 2 | head -n 1 | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
+    else
+        echo 0
+    fi
+}
+
+function dotarrowCountLast() {
+    expr $(cat "$1" | tail -n 1 | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
+}
+
 function dotarrowScalaToHaskell0() {
     local x=dotarrow
     local p="`readlink -m \"$x/tmp/$1\"`"
     local _24="`printf '%24s'`"
     local _24="${_24// /\\ }"
-    local n=`cat "$p.txt" | wc -l`
-    let n=n-1
-    let m=n-1
+    local n=`dotarrowCount "$p.txt"`
+    let j=`dotarrowCountLast "$p.txt"`
+    let n=n-j
+    let k=`dotarrowCountPreLast "$p.txt"`
+    let m=n-k
     [ $m -ge 0 ] || let m=0
     sed -i "$p/app/Inp_"*.hs -e "10,+${m}d"
-    sed -i "$p/app/Out_"*.hs -e "11,+$((m+1))d"
+    sed -i "$p/app/Out_"*.hs -e "11,+$((m+k))d"
     cat "$p.txt" | head -n -1 |
-    while read name_tpe
+    while read count_name_tpe
     do
-        local name="${name_tpe%% *}"
-        local tpe="${name_tpe#* }"
-        sed -i "$p/app/Inp_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
-        sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
-        local c=,
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i "$p/app/Inp_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+            sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+            local c=,
+        done
     done
     cat "$p.txt" | tail -n 1 |
-    if read name_tpe
+    if read count_name_tpe
     then
         [ $n -eq 0 ] || local c=,
-        local name="${name_tpe%% *}"
-        local tpe="${name_tpe#* }"
-        sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+        done
     fi
     [ $n -eq 0 ] || local c=,
     sed -i "$p/app/Inp_"*.hs -e "/[}]/i${_24}${c:-\\ }\ dummy_gUgVwYdD8r\ ::\ Maybe\ String"
@@ -107,8 +148,10 @@ function dotarrowScalaToHaskell() {
     stack build &>/dev/null
     stack run >| "$p.tmp" || return 1
     popd &>/dev/null
+    local n=`grep -n '^main.::' "$p.tmp" | awk -F: '{ print $1 }'`
+    let n++
     cat "$p.tmp" |
-    sed -e '/^main.::/i\
+    sed -e '1i\
 module\ Main\ where\
 \
 import GHC.Base\
@@ -119,7 +162,7 @@ import\ Inp_gUgVwYdD8r\
 import\ Out_gUgVwYdD8r\
 ' \
         -e '/^main.::/amain\ =\ do' \
-        -e '2~1s/^/    /' >| "$q/app/Main.hs"
+        -e "$n~1s/^/    /" >| "$q/app/Main.hs"
     dotarrowScalaToHaskell0 "$2"
     sed -i "$q.json" -e '/^[}]/i,"dummy_gUgVwYdD8r":null'
     return 0
@@ -133,20 +176,9 @@ function dotarrowHaskellToScala() {
     local q="`readlink -m \"$x/tmp/$2\"`"
     local r="`readlink -m \"$x/src/$2\"`"
     mkdir -p "$p/tmp"; rm -fr "$p/tmp/hs2sc" &>/dev/null; cp -r "$app" "$p/tmp"
-    pushd "$p/tmp/hs2sc/prj" &>/dev/null
-    local n=`cat "app/Main.hs.in" | grep -n '^\s*source\s*=' | awk -F: '{ print $1 }'`
-    cat "app/Main.hs.in" | head -n $n >| "$p.tmp"
-    popd &>/dev/null
     pushd "$p/tmp/hs2sc" &>/dev/null
     stack build &>/dev/null
-    stack run -- "$q/app/Main.hs" >> "$p.tmp"
-    popd &>/dev/null
-    pushd "$p/tmp/hs2sc/prj" &>/dev/null
-    cat "app/Main.hs.in" | tail -n +`expr $n + 1` >> "$p.tmp"
-    mv "$p.tmp" app/Main.hs
-    sed -i app/Main.hs -e '/^SmSource/s/^/    /'
-    stack build &>/dev/null
-    stack run >| "$r.scala.src"
+    stack run -- "$q/app/Main.hs" >| "$r.scala.src"
     popd &>/dev/null
     sed -e 's/Init.Type.Select.Term.Name."IOApp".,.Type.Name."Simple"..,.Name.Anonymous.., Nil./Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Seq())/' \
         -e 's/Init.Type.Name.\(["][^"]\+["]\).,.Name.Anonymous..,.Nil./Init(Type.Name(\1), Name.Anonymous(), Seq())/g' \
@@ -163,27 +195,49 @@ function dotarrowAeson0() {
     local p="`readlink -m \"$x/tmp/$1\"`"
     local _24="`printf '%24s'`"
     local _24="${_24// /\\ }"
-    local n=`cat "$p.txt" | wc -l`
-    let m=n-1
-    [ $m -ge 0 ] || let m=0
+    local n=`dotarrowCount "$p.txt"`
+    local k=`dotarrowCountLast "$p.txt"`
+    let m=n-k
     sed -i "$p/app/Inp_"*.hs -e "10,+${m}d"
-    sed -i "$p/app/Out_"*.hs -e "11,+$((m+1))d"
+    sed -i "$p/app/Out_"*.hs -e "11,+$((m+k))d"
     cat "$p.txt" |
-    while read name_tpe
+    while read count_name_tpe
     do
-        local name="${name_tpe%% *}"
-        local tpe="${name_tpe#* }"
-        sed -i "$p/app/Inp_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
-        sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
-        local c=,
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i "$p/app/Inp_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+            sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+            local c=,
+        done
     done
     cat "$p.tmp" | tail -n 1 |
-    if read name_tpe
+    if read count_name_tpe
     then
         [ $n -eq 0 ] || local c=,
-        local name="${name_tpe%% *}"
-        local tpe="${name_tpe#* }"
-        sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+        done
     fi
     [ $n -eq 0 ] || local c=,
     sed -i "$p/app/Inp_"*.hs -e "/[}]/i${_24}${c:-\\ }\ dummy_gUgVwYdD8r\ ::\ Maybe\ String"
@@ -200,19 +254,29 @@ function dotarrowAeson() {
     mkdir -p "$p/tmp"; rm -fr "$p/tmp/aeson" &>/dev/null; cp -r "$app" "$p/tmp"
     pushd "$p/tmp/aeson/app" &>/dev/null
     mv Main.hs{.in,}
-    local _81="`printf '%81s'`"
-    local _81="${_81// /\\ }"
-    local _39="`printf '%39s'`"
-    local _39="${_39// /\\ }"
+    local _70="`printf '%70s'`"
+    local _70="${_70// /\\ }"
+    local _57="`printf '%57s'`"
+    local _57="${_57// /\\ }"
     cat "$p.txt" |
-    while read name_tpe
+    while read count_name_tpe
     do
-        local name="${name_tpe%% *}"
-        local tpe="${name_tpe#* }"
-        sed -i Main.hs \
-            -e "/WildP/i${_81}${c:-\\ }VarP\ (Name\ (OccName\ \"$name\")\ NameS)" \
-            -e "/ConE..Name..OccName..JsonO/i${_39}(AppE" \
-            -e "/VarE.name'/i${_39}(VarE\ (Name\ (OccName\ \"$name\")\ NameS)))"
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i Main.hs \
+                -e "/WildP/i${_70}${c:-\\ }VarP\ (Name\ (OccName\ \"$name\")\ NameS)" \
+                -e "/[]].[+][+].ns/i${_57}${c:-\\ }\"$name\""
+        done
         local c=,
     done
     if [ -s "$p.txt" ]
@@ -246,10 +310,27 @@ function dotarrowAeson2() {
     mkdir -p "$p/tmp"; rm -fr "$p/tmp/aeson2" &>/dev/null; cp -r "$app" "$p/tmp"
     pushd "$p/tmp/aeson2/app" &>/dev/null
     mv Main.hs{.in,}
-    local name_tpe="`cat \"$p.txt\" | tail -n 1`"
-    local _71="`printf '%71s'`"
-    local _71="${_71// /\\ }"
-    sed -i Main.hs -e "/stmt'.[(]\$/a${_71}\"$name_tpe\""
+    cat "$p.txt" | tail -n 1 |
+    if read count_name_tpe
+    then
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        local _70="`printf '%70s'`"
+        local _70="${_70// /\\ }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i Main.hs -e "/[]].ss\$/i${_70}${c:-\\ }(\"$name\",\ \"$tpe\")"
+            local c=,
+        done
+    fi
     stack build &>/dev/null
     stack run -- "$p/app/Main.hs" >> "$p.tmp" || return 1
     popd &>/dev/null
@@ -271,16 +352,27 @@ function dotarrowCirce() {
     cat "$app" | tail -n +`expr $n + 1` |
     sed -e '/[io]tmp.XXXXXXXXXX/s/\([io]\)tmp.XXXXXXXXXX/\1'"$1/g" \
         -e "/\"tmp.XXXXXXXXXX\"/s|[\"]tmp.XXXXXXXXXX[\"]|\"$x/tmp/$1.json\"|g" >> "$x/tmp/$1.tmp"
-    tac "$x/tmp/$1.txt" |
-    while read name_tpe
+    cat "$x/tmp/$1.txt" |
+    while read count_name_tpe
     do
-        local name="${name_tpe%% *}"
-        local tpe="${name_tpe#* }"
-        sed -i "$x/tmp/$1.tmp" \
-            -e "/val.ls:.List.Stat./aDefn.Var(Nil,List(Pat.Var(Term.Name(\"$name\"))),None,Term.ApplyType(Term.Select(Lit.Null(),Term.Name(\"asInstanceOf\")),Type.ArgClause(List(Type.Name(\"$tpe\")))))," \
-            -e "/Defn.Class.*[io]$1/aTerm.Param(Nil,Term.Name(\"$name\"),Some(Type.Name(\"$tpe\")),None)," \
-            -e "/Defn.Val.*i$1/aTerm.Assign(Term.Name(\"$name\"),Term.Select(Term.Name(\"json\"),Term.Name(\"$name\")))," \
-            -e "/Defn.Val.*o$1/aTerm.Name(\"$name\"),"
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i "$x/tmp/$1.tmp" \
+                -e "/val.ls:.List.Stat./aDefn.Var(Nil,List(Pat.Var(Term.Name(\"$name\"))),None,Term.ApplyType(Term.Select(Lit.Null(),Term.Name(\"asInstanceOf\")),Type.ArgClause(List(Type.Name(\"$tpe\")))))," \
+                -e "/Defn.Class.*[io]$1/aTerm.Param(Nil,Term.Name(\"$name\"),Some(Type.Name(\"$tpe\")),None)," \
+                -e "/Defn.Val.*i$1/aTerm.Assign(Term.Name(\"$name\"),Term.Select(Term.Name(\"json\"),Term.Name(\"$name\")))," \
+                -e "/Defn.Val.*o$1/aTerm.Name(\"$name\"),"
+        done
     done
     mv "$x/tmp/$1.tmp" "$x/$1.scala"
     rm "$x/src/$1.scala.src" &>/dev/null
@@ -291,17 +383,32 @@ function dotarrowCirce2() {
     local x=dotarrow
     local app2="../$x/circe/app2.scala.in"
     local n=`cat "$app2" | grep -n '^..private.val.app' | awk -F: '{ print $1 }'`
-    local name_tpe="`tac \"$x/tmp/$1.txt\" | head -n 1`"
-    local name="${name_tpe%% *}"
-    local tpe="${name_tpe#* }"
     cat "$app2" | head -n $n >| "$x/tmp/$1.tmp"
     cat "$x/src/$1.scala.src" |
     sed -e 's/Init.Type.Select.Term.Name."IOApp".,.Type.Name."Simple"..,.Name.Anonymous.., Nil./Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Seq())/' \
         -e 's/Init.Type.Name.\(["][^"]\+["]\).,.Name.Anonymous..,.Nil./Init(Type.Name(\1), Name.Anonymous(), Seq())/g' \
         -e 's/^/    /' >> "$x/tmp/$1.tmp"
-    cat "$app2" | tail -n +`expr $n + 1` |
-    sed -e "/name[ ]*:[ ]*String/s/\$/\"$name\"/" \
-        -e "/tpe[ ]*:[ ]*String/s/\$/\"$tpe\"/" >> "$x/tmp/$1.tmp"
+    cat "$app2" | tail -n +`expr $n + 1` >> "$x/tmp/$1.tmp"
+    cat "$x/tmp/$1.txt" | tail -n 1 |
+    if read count_name_tpe
+    then
+        local count="${count_name_tpe%% *}"
+        local name_tpe="${count_name_tpe#* }"
+        while [ $count -gt 0 ]
+        do
+            let count--
+            local name="${name_tpe%% *}"
+            local tpe="${name_tpe#* }"
+            if [ $count -gt 0 ]
+            then
+                local name_tpe="${tpe#* }"
+                local tpe="${tpe%% *}"
+            fi
+            sed -i "$x/tmp/$1.tmp" \
+                -e "/names\s*=\s*List/a\"$name\"," \
+                -e "/tpes\s*=\s*List/a\"$tpe\","
+        done
+    fi
     mv "$x/tmp/$1.tmp" "$x/$1.scala"
     rm "$x/src/$1.scala.src" &>/dev/null
 }
@@ -348,6 +455,7 @@ function dotarrowStream2() {
         -e "/tpe[ ]*:[ ]*String/s/\$/\"$tpe\"/" >> "$x/tmp/$1.tmp"
 }
 
+export -f dotarrowCount dotarrowCountPreLast dotarrowCountLast
 export -f dotarrowScalaToHaskell0 dotarrowScalaToHaskell dotarrowHaskellToScala
 export -f dotarrowAeson0 dotarrowAeson dotarrowAeson2
 export -f dotarrowCirce dotarrowCirce2 dotarrowStream dotarrowStream2

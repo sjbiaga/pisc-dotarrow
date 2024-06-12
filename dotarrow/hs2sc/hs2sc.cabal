@@ -6,11 +6,7 @@ version:            0.1.0.0
 
 synopsis:
 
--- description:
-
 homepage:
-
--- bug-reports:
 
 license:            MIT
 
@@ -28,7 +24,9 @@ executable hs2sc
     main-is:          Main.hs
 
     other-modules:
-        Expr
+        Term,
+        Stat,
+        RunQ
 
     build-depends:
         base ^>=4.18,

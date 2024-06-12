@@ -146,23 +146,22 @@ my $REF = {
     "Importee.Wildcard" => [ "RImportee(SmWildcardI", \(\&Void) ],
     "Init"              => [ "RInit(SmInit",          \(\&Type_), \(\&Name), \(\&ArgClauseTList) ],
 
-    #    "Term.Anonymous"     => [ "RName(NAnonymous(SmAnonymousRT",    \(\&Void) ],
     "Name"               => [ "RName(NName(SmIndeterminateN", \(\&Str) ],
     "Name.Anonymous"     => [ "RName(NName(SmAnonymousN",     \(\&Void) ],
     "Name.Indeterminate" => [ "RName(NName(SmIndeterminateN", \(\&Str) ],
     "Name.Placeholder"   => [ "RName(NName(SmPlaceholderN",   \(\&Void) ],
     "Name.This"          => [ "RName(NName(SmThisN",          \(\&Void) ],
 
-    #    "Term.Anonymous"  => [ "R_TRef(RRTAnonymous(SmAnonymousRT", \(\&Void) ],
-    "Term.ApplyUnary" => [ "R_TRef(RTRef(SmApplyUnaryRT",   \(\&NameT), \(\&Term) ],
-    "Term.Name"       => [ "R_TRef(RTName(SmNameT",         \(\&Str) ],
-    "Term.Select"     => [ "R_TRef(RTSelect(SmSelectRT",    \(\&Term), \(\&NameT) ],
-    "Term.Super"      => [ "R_TRef(RTRef(SmSuperRT",        \(\&Name), \(\&Name) ],
-    "Term.This"       => [ "R_TRef(RTRef(SmThisRT",         \(\&Name) ],
-    "Type.Name"       => [ "R_T'Ref(RT'Name(SmNameT'",      \(\&Str) ],
-    "Type.Project"    => [ "R_T'Ref(RT'Ref(SmProjectRT'",   \(\&Type_), \(\&NameT_) ],
-    "Type.Select"     => [ "R_T'Ref(RT'Ref(SmSelectRT'",    \(\&RefT),  \(\&NameT_) ],
-    "Type.Singleton"  => [ "R_T'Ref(RT'Ref(SmSingletonRT'", \(\&RefT) ]
+    "Term.Anonymous"  => [ "R_TRef(RTAnonymous(SmAnonymousRT", \(\&Void) ],
+    "Term.ApplyUnary" => [ "R_TRef(RTRef(SmApplyUnaryRT",      \(\&NameT), \(\&Term) ],
+    "Term.Name"       => [ "R_TRef(RTName(SmNameT",            \(\&Str) ],
+    "Term.Select"     => [ "R_TRef(RTSelect(SmSelectRT",       \(\&Term), \(\&NameT) ],
+    "Term.Super"      => [ "R_TRef(RTRef(SmSuperRT",           \(\&Name), \(\&Name) ],
+    "Term.This"       => [ "R_TRef(RTRef(SmThisRT",            \(\&Name) ],
+    "Type.Name"       => [ "R_T'Ref(RT'Name(SmNameT'",         \(\&Str) ],
+    "Type.Project"    => [ "R_T'Ref(RT'Ref(SmProjectRT'",      \(\&Type_), \(\&NameT_) ],
+    "Type.Select"     => [ "R_T'Ref(RT'Ref(SmSelectRT'",       \(\&RefT),  \(\&NameT_) ],
+    "Type.Singleton"  => [ "R_T'Ref(RT'Ref(SmSingletonRT'",    \(\&RefT) ]
 };
 
 ## S #################################################################################################################################################
@@ -402,13 +401,18 @@ sub Main {
         &Any(\"Source", $SOURCE, \"Main", \$_);
         print "\n"
     }
-    0
 }
 
-exit &Main() if $#ARGV == -1;
-
-$_ = join(" ", @ARGV);
-&Any(\"Stat", $STAT, \"Main", \$_);
+if ($#ARGV == -1) {
+    &Main()
+} elsif ($ARGV[0] eq "-") {
+    shift @ARGV;
+    $_ = join(" ", @ARGV);
+    &Any(\"Term", $TERM, \"Main", \$_)
+} else {
+    $_ = join(" ", @ARGV);
+    &Any(\"Stat", $STAT, \"Main", \$_)
+}
 
 exit 0;
 
@@ -435,7 +439,7 @@ sub Any {
             return $io
         }
     }
-    die "$what: unknown `$what' or no open parenthesis - in=|$in|"
+    die "$what: unknown `$what' or no open parenthesis"
 }
 
 # `Nil'
@@ -531,6 +535,8 @@ sub ArgsTypeOpt { &Opt(@_) if unshift @_, \"ArgsTypeOpt", \(\&ArgsType) }
 
 ## AC ################################################################################################################################################
 
+sub ArgClauseP { &Any(@_) if unshift @_, \"ArgClauseP", $ACP }
+
 sub ArgClauseT { &Any(@_) if unshift @_, \"ArgClauseT", $ACT }
 
 sub ArgClauseTList { &List(@_) if unshift @_, \"ArgClauseTList", \(\&ArgClauseT) }
@@ -547,7 +553,7 @@ sub Case { &Any(@_) if unshift @_, \"Case", $CASE }
 
 sub CaseList { &List(@_) if unshift @_, \"CaseList", \(\&Case) }
 
-sub Type_Case { &Any(@_) if unshift @_, \"Type_Case", $CASE }
+sub Type_Case { &Any(@_) if unshift @_, \"Type_Case", $TYPE_CASE }
 
 sub Type_CaseList { &List(@_) if unshift @_, \"Type_CaseList", \(\&Type_Case) }
 

@@ -2,15 +2,15 @@
 {-# LANGUAGE LambdaCase #-}
 module Main where
 
+import Control.Monad (replicateM)
 import Data.ByteString.Lazy.Char8 (unpack)
+import Data.Foldable (traverse_)
+import Data.List (intercalate)
 import Language.Haskell.Interpreter
 import Language.Haskell.TH.Syntax
 import System.Process.Typed
 import System.Random
-import System.IO.Unsafe
 
-import HaScalaM.Classes
-import HaScalaM.Classes.Base
 import HaScalaM.Instances.Base
 import HaScalaM.Instances.Enums
 import HaScalaM.Instances.Pat
@@ -31,25 +31,49 @@ import HaScalaM.Types.Tilde
 
 source =
 
+
 amm :: MonadInterpreter mi => String -> mi String
-amm exp =
-       do
+amm exp = do
           (out, _) <- readProcess_ (proc "amm" ["-c", i ++ i2 ++ pr])
           return (unpack out)
     where i = "import $ivy.`org.scalameta:scalameta_2.13:4.9.5`;"
           i2 = "import scala.meta._; import dialects.Scala3;"
           pr = "print(" ++ exp ++ ")"
 
-rnd :: String
-rnd = take 10 $ randomRs ('a','z') $ unsafePerformIO newStdGen
+rnd :: Int -> String
+rnd s = take 10 $ randomRs ('a','z') (mkStdGen s)
 
 src :: ( s ~ SmStat
        , MonadInterpreter mi ) => SmSource s -> mi ()
-src (SmSource [SImpExp (SmImportS [io])
-              ,SObject (SmObjectS [] (SmNameT "App") it)
-              ]
-    ) = imp io >> app it
+src (SmSource ((SImpExp (SmImportS [io])) : it)
+    ) = imp io >> traverse_ stm it
 src _ = pure ()
+
+stm :: ( s ~ SmStat
+       , MonadInterpreter mi
+       ) => s -> mi ()
+stm (SObject (SmObjectS [] (SmNameT "App") it)) = app it
+stm (SClass (SmClassS [MMod SmCaseM]
+                      (SmNameT' name)
+                      (SmParamClauseT' [])
+                      (SmCtorPrimary []
+                                     (NName SmAnonymousN)
+                                     [SmParamClauseT ps Nothing])
+                      (SmTemplate [] [] (SmSelf (NName SmAnonymousN) Nothing) [] []))
+    ) = ppr ("DataD [] " ++ name' ++ " [] Nothing [RecC " ++ name' ++ " [" ++ ps' ++ "]] []")
+    where name' = "(Name (OccName \"" ++ name ++ "\") NameS)"
+          ps' = intercalate "," (map prm ps)
+stm _ = error "stm"
+
+prm :: p ~ SmParamT m n t' t => p -> String
+prm (SmParamT []
+              (NTName (SmNameT name))
+              (Just (T'Ref (RT'Name (SmNameT' type'))))
+              Nothing
+    ) = "(Name (OccName \"" ++ name ++ "\") NameS" ++
+        ",Bang NoSourceUnpackedness NoSourceStrictness" ++
+        ",ConT (Name (OccName \"" ++ type' ++ "\") NameS))"
+prm _ = error "prm"
 
 imp :: ( r ~ SmRef
        , i ~ SmImportee
@@ -87,8 +111,7 @@ def (SmDefS [MMod SmOverrideM] (SmNameT "run") []
             (Just (T'Apply (SmApplyT' (T'Ref (RT'Name (SmNameT' "IO")))
                                       (SmArgClauseT' [T'Ref (RT'Name (SmNameT' "Unit"))]))))
             (TForYield it)
-    ) =
-     do
+    ) = do
         ppr ("SigD (Name (OccName \"main\") NameS)" ++
                   "(AppT (ConT (Name (OccName \"IO\") NameS)) (TupleT 0))")
         for it
@@ -106,6 +129,12 @@ for (SmForYieldT it (TLit SmUnitL)) = gs'
                                                                           case t
                                                                           of IOvoid -> pure (t, -1)
                                                                              _      -> pure (IOerror, -1)
+                                                                      else
+                                                                          pure (t, i + 1)
+                                                   EVal v       -> do t <- val v
+                                                                      if i + 1 == length it
+                                                                      then
+                                                                          pure (IOerror, -1)
                                                                       else
                                                                           pure (t, i + 1)
                                                    _            -> undefined))
@@ -139,27 +168,54 @@ gen (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name))) (T'Ref (RT'Name
                                                                                             (SmArgClauseT [expr] Nothing)))
                                                                    ])
                                                   ] Nothing)))
-    ) = amm (show expr)
-    >>= bnd' name'
-    >>  ppr ("(BindS (SigP (VarP (Name (OccName \"" ++ name ++ "\") NameS)) " ++
+    ) = do
+        s <- randomIO
+        let r = rnd s
+        let Name (OccName name') _ = mkName r
+        expr' <- amm (show expr)
+        bnd' name' expr'
+        ppr ("(BindS (SigP (VarP (Name (OccName \"" ++ name ++ "\") NameS)) " ++
                           "(ConT (Name (OccName \"()\") NameS))) " ++
                     "(AppE (VarE (Name (OccName \"print\") NameS)) " ++
                            name' ++
-            "))")
-    >>  pure IOprintln
-    where Name (OccName name') _ = mkName rnd
+                    ")" ++
+             ")")
+        return IOprintln
+gen (SmGeneratorE (PVar (SmVarP (SmNameT name)))
+                  (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
+                                    (SmArgClauseT [TTerm (SmBlockT [STerm (TApply (SmApplyT (TRef (RTName (SmNameT name')))
+                                                                                            (SmArgClauseT expr' Nothing)))])
+                                                  ] Nothing)))
+    ) = do
+        s'' <- replicateM n randomIO
+        expr'' <- traverse (amm . show) expr'
+        let name'' = [ name' | s <- s'', let Name (OccName name') _ = mkName (rnd s) ]
+        traverse_ (uncurry bnd') (zip name'' expr'')
+        ppr ("(BindS (VarP (Name (OccName \"" ++ name ++ "\") NameS)) " ++
+                    "(UInfixE (VarE (Name (OccName \"pure\") NameS)) " ++
+                             "(VarE (Name (OccName \"$\") NameS)) " ++
+                              concat (replicate n "(AppE ") ++
+                                                  "(ConE (Name (OccName \"" ++ name' ++ "\") NameS)) " ++
+                                                  concatMap (++")") name'' ++
+                    ")" ++
+             ")")
+        return IOignore
+    where n = length expr'
 gen (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name)))
                                   (T'Ref (RT'Name (SmNameT' type')))))
                   (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
                                     (SmArgClauseT [TTerm (SmBlockT [expr])] Nothing)))
-    ) = amm (show expr)
-    >>= bnd name'
-    >>  ppr ("(BindS (SigP (VarP (Name (OccName \"" ++ name ++ "\") NameS)) " ++
+    ) = do
+        s <- randomIO
+        let r = rnd s
+        let Name (OccName name') _ = mkName r
+        expr' <- amm (show expr)
+        bnd name' expr'
+        ppr ("(BindS (SigP (VarP (Name (OccName \"" ++ name ++ "\") NameS)) " ++
                           "(ConT (Name (OccName \"" ++ type' ++ "\") NameS))) " ++
                      name' ++
              ")")
-    >>  pure IObind
-    where Name (OccName name') _ = mkName rnd
+        return IObind
 gen (SmGeneratorE (PPat SmWildcardP)
                   (TRef (RTSelect (SmSelectRT (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
                                                                 (SmArgClauseT [TTerm (SmBlockT [])] Nothing)))
@@ -169,6 +225,24 @@ gen (SmGeneratorE (PPat SmWildcardP)
              ")")
     >>  pure IOvoid
 gen _ = error "gen"
+
+val :: ( p ~ SmPat
+       , t ~ SmTerm
+       , MonadInterpreter mi
+       ) => SmValE p t -> mi GeneratorType
+val (SmValE (PExtract (SmExtractP (TRef (RTName (SmNameT name')))
+                                  (SmArgClauseP ps)))
+            (TRef (RTName (SmNameT name)))
+    ) = do
+        ppr ("LetS [ValD (ConP (Name (OccName \"" ++ name' ++ "\") NameS) [] [" ++ name'' ++ "]) "++
+                        "(NormalB (VarE (Name (OccName \"" ++ name ++ "\") NameS))) []" ++
+                  "]"
+            )
+        return IOignore
+    where var (PVar (SmVarP (SmNameT name))) = name
+          name'' = intercalate "," (map (("VarP (Name (OccName \"" ++) . (++ "\") NameS)") . var) ps)
+val _ = error "val"
+
 
 main :: IO ()
 main = do

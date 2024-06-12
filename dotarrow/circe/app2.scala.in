@@ -52,10 +52,10 @@ object App extends IOApp:
   def sts: List[Stat] => Option[List[Stat]] = {
     case (pk: Pkg) :: it =>
       (pkg(pk) zip sts(it)).map(_ :: _)
-    case (po: Pkg.Object) :: it =>
-      (pko(po) zip sts(it)).map(_ :: _)
     case (im: Import) :: it =>
       sts(it).map(im :: _)
+    case (cl: Defn.Class) :: it =>
+      (cls(cl) zip sts(it)).map(_ :: _)
     case (ob: Defn.Object) :: it =>
       (obj(ob) zip sts(it)).map(_ :: _)
     case ls => Some(ls)
@@ -66,9 +66,14 @@ object App extends IOApp:
       sts(it).map(Pkg(ref, _))
   }
 
-  def pko: Pkg.Object => Option[Pkg.Object] = {
-    case po @ Pkg.Object(_, _, it) =>
-      tmp(it).map { tm => po.copy(templ = tm) }
+  val cls: Defn.Class => Option[Defn.Class] = {
+    case cl @ Defn.Class(Mod.Case() :: Nil,
+                         _,
+                         Nil,
+                         Ctor.Primary(Nil, Name.Anonymous(), _ :: Nil),
+                         Template(Nil, Nil, Self(Name.Anonymous(), None), Nil)) =>
+      Some(cl)
+    case _ => None
   }
 
   val obj: Defn.Object => Option[Defn.Object] = {
@@ -79,7 +84,7 @@ object App extends IOApp:
   val tmp: Template => Option[Template] = {
     case my @ Template(Nil, List(Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Nil)), _, (df: Defn.Def) :: it) =>
       io.dfn(df).map { io_df => my.copy(stats = io_df :: it) }
-    case tm => Some(tm)
+    case _ => None
   }
 
   override def run(_args: List[String]): IO[ExitCode] =
@@ -113,7 +118,17 @@ private object io:
     case Enumerator.Generator(Pat.Wildcard(), Term.Apply(Term.Name("IO"), _))
       :: Enumerator.Generator(Pat.Typed(Pat.Var(Term.Name(`name`)), Type.Name(`tpe`)),
                               Term.Apply(Term.Name("IO"), _))
-      :: it => en2(it)
+      :: it
+        if nt.size == 1
+        => en2(it)
+    case Enumerator.Generator(Pat.Wildcard(), Term.Apply(Term.Name("IO"), _))
+      :: Enumerator.Generator(Pat.Var(Term.Name(name1)), Term.Apply(Term.Name("IO"), List(Term.Block(_))))
+      :: Enumerator.Val(Pat.Extract(Term.Name(_), ls), Term.Name(name2))
+      :: it
+        if name1 == name2
+        && ls.forall { case Pat.Var(Term.Name(_)) => true case _ => false }
+        && names == ls.map { case Pat.Var(Term.Name(name)) => name }
+        => en2(it)
     case Nil => None
     case _ :: it => enu(it)
   }
@@ -122,7 +137,7 @@ private object io:
   private def en2(ls: List[Enumerator]): Option[List[Enumerator]] = ls match {
     case Enumerator.Generator(Pat.Wildcard(),
                               Term.Apply(Term.Name("IO"),
-                                         List(Term.Block(List(Term.Apply(Term.Select(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("scala")), Term.Name("Console")), Term.Name("err")), Term.Name("println")), List(Lit.String(`name_tpe`))), _*)))))
+                                         List(Term.Block(List(Term.Apply(Term.Select(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("scala")), Term.Name("Console")), Term.Name("err")), Term.Name("println")), List(Lit.String(`count_name_tpe`))), _*)))))
       :: Enumerator.Generator(Pat.Wildcard(),
                               Term.Select(Term.Name("IO"), Term.Name("canceled")))
       :: it => Some(it)
@@ -130,8 +145,16 @@ private object io:
     case _ :: it => en2(it)
   }
 
-  private val name: String = 
+  private val names = List(
+  ).reverse
 
-  private val tpe: String = 
+  private val name = names.head
 
-  private val name_tpe = name + ' ' + tpe
+  private val tpes = List(
+  ).reverse
+
+  private val tpe = tpes.head
+
+  private val nt = names zip tpes
+
+  private val count_name_tpe = s"${nt.size}" + ' ' + nt.map(_ + ' ' + _).mkString(" ")

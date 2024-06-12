@@ -1,10 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Expr where
+module Stat where
 
 import Data.ByteString.Lazy.Char8 (unpack)
+import Data.Functor
 import Language.Haskell.TH.Syntax
-import Language.Haskell.Meta.Parse
 import System.Process.Typed
+
+import HaScalaM.Types.Tilde (SmStat (S''))
 
 amm :: Quasi q => String -> q String
 amm exp =
@@ -15,17 +17,5 @@ amm exp =
           i2 = "import scala.meta._; import dialects.Scala3;"
           pr = "print(\"\"\"" ++ exp ++ "\"\"\".parse[Stat].get.structure)"
 
-s2h :: Quasi q => String -> q String
-s2h exp =
-       do
-          (out, _) <- readProcess_ (proc "Scalameta2Haskell.pl" [exp])
-          return (unpack out)
-
 exp :: Quasi q => q Exp
-exp = runQ [| \(it::String) ->
-                  do
-                    sc <- amm it
-                    hs <- s2h sc
-                    let Right it' = parseExp hs
-                    return it'
-           |]
+exp = runQ [| \(it::String) -> amm it <&> S'' |]

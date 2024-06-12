@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import Language.Haskell.Meta.Parse
@@ -5,10 +6,14 @@ import Language.Haskell.TH.Ppr
 import Language.Haskell.TH.Syntax
 
 import Control.Monad (when)
+import Data.List (intercalate)
+import qualified Data.Map as M
 import Data.Maybe
 import System.Environment
 import System.Exit (exitSuccess, exitFailure)
 
+
+type CC = M.Map String [(String, String)]
 
 sig :: Dec -> Maybe Dec
 sig s@(SigD (Name (OccName "main") _)
@@ -16,62 +21,80 @@ sig s@(SigD (Name (OccName "main") _)
                   (ConT (Name (OccName "()") _)))) = Just s
 sig _ = Nothing
 
-val :: Dec -> Maybe (Dec, String)
+val :: Dec -> CC -> Maybe (Dec, String)
 val v@(ValD m@(VarP (Name (OccName "main") _))
-            (NormalB (DoE Nothing ss)) []) | isEachSimple && isReturnLast = v'nt
+              (NormalB (DoE Nothing ss)) []) cc
+    | isEachSimple && isReturnLast = v'cnt
     where isEachSimple = all (isJust . stmt) ss
           isReturnLast | null ss   = False
                        | otherwise = case stmt (last ss)
                                      of Just (_, Return) -> True
                                         _                -> False
-          v'nt = (\(it, nt) -> (ValD m (NormalB (DoE Nothing it)) [], nt)) <$> stmt' ss
-val _ = Nothing
+          v'cnt = (\(it, cnt) -> (ValD m (NormalB (DoE Nothing it)) [], cnt)) <$> stmt' ss cc
+val _ _ = Nothing
 
-stmt' :: [Stmt] -> Maybe ([Stmt], String)
-stmt' (my@(BindS (SigP (VarP name'@(Name (OccName name) _))
-                       (ConT (Name (OccName tpe) _))) _):it)
-    = (\ (before, after) ->
-        let iae = [BindS (VarP (Name (OccName "inp_gUgVwYdD8r") NameS))
-                         (AppE (VarE (Name (OccName "read_gUgVwYdD8r") NameS)) (LitE (StringL "itmp.XXXXXXXXXX")))
-                  ,LetS [ValD (ConP (Name (OccName "JsonI_gUgVwYdD8r") NameS) [] [
-                                                                                  WildP
-                                                                                 ]
-                              )
-                              (NormalB (VarE (Name (OccName "inp_gUgVwYdD8r") NameS))) []]
-                  ]
-            oae = [NoBindS (AppE (AppE (VarE (Name (OccName "hPutStrLn") NameS)) (VarE (Name (OccName "stderr") NameS))) (ParensE (UInfixE (LitE (StringL name)) (VarE (Name (OccName "++") NameS)) (UInfixE (LitE (StringL " ")) (VarE (Name (OccName "++") NameS)) (LitE (StringL tpe))))))
-                  ,LetS [ValD (VarP (Name (OccName "out_gUgVwYdD8r") NameS))
-                              (NormalB
-                                       (AppE (AppE
-                                       (ConE (Name (OccName "JsonO_gUgVwYdD8r") NameS))
-                                       (VarE name'))
-                                       (ConE (Name (OccName "Nothing") NameS)))
-                              ) []]
-                  ,NoBindS (AppE (AppE (VarE (Name (OccName "write_gUgVwYdD8r") NameS))
-                                       (VarE (Name (OccName "out_gUgVwYdD8r") NameS))) (LitE (StringL "otmp.XXXXXXXXXX")))
-                  ]
-        in ((iae ++ my : before) ++ (oae ++ NoBindS (VarE (Name (OccName "exitFailure") NameS)) : after), name ++ " " ++ tpe)
+stmt' :: [Stmt] -> CC -> Maybe ([Stmt], String)
+stmt' (my@(BindS (SigP (VarP (Name (OccName name) _))
+                       (ConT (Name (OccName tpe) _))) _)
+      :it) cc
+    = (\(before, after) ->
+        let iae = itmp
+            oae = otmp ("1", name_tpe) [name]
+        in ((iae ++ my : before) ++ (oae ++ exitF : after), "1" ++ " " ++ name_tpe)
       ) <$> stmt'' [] it
+    where name_tpe = name ++ " " ++ tpe
+stmt' (me@(BindS (VarP (Name (OccName name1) _))
+                 (UInfixE (VarE (Name (OccName "pure") _))
+                          (VarE (Name (OccName "$") _))
+                          _))
+      :my@(LetS [ValD (ConP (Name (OccName name) _) [] ls)
+                      (NormalB (VarE (Name (OccName name2) _))) []])
+      :it) cc
+    | name1 == name2 && all var ls && M.member name cc
+    = (\(before, after) ->
+        let iae = itmp
+            oae = otmp (n, name_tpe) name's
+        in ((iae ++ me : my : before) ++ (oae ++ exitF : after), n ++ " " ++ name_tpe)
+      ) <$> stmt'' [] it
+    where name_tpe = intercalate " " (zipWith (\n t -> n ++ " " ++ t) name's tpe's)
+          n = show (length ls)
+          var = (\case (VarP (Name (OccName _) _)) -> True
+                       _                           -> False)
+          name's = map (\case (VarP (Name (OccName name) _)) -> name) ls
+          tpe's = map snd (fromJust (M.lookup name cc))
 stmt' [NoBindS (AppE (VarE (Name (OccName "return") _))
-                     (ConE (Name (OccName "()") _)))] = Nothing
-stmt' [] = fail "end statement must be `return ()'"
-stmt' (hd:tl) = (\(it, nt) -> (hd:it, nt)) <$> stmt' tl
+                     (ConE (Name (OccName "()") _)))] _ = Nothing
+stmt' [] _ = fail "end statement must be `return ()'"
+stmt' (hd:tl) cc = (\(it, cnt) -> (hd:it, cnt)) <$> stmt' tl cc
 
 stmt'' :: [Stmt] -> [Stmt] -> Maybe ([Stmt], [Stmt])
 stmt'' before after@(NoBindS (AppE (VarE (Name (OccName "return") _))
                                    (ConE (Name (OccName "()") _))):_) = Just (before, after)
 stmt'' before after@((BindS (SigP (VarP _) (ConT _)) _):_) = Just (before, after)
+stmt'' before after@((BindS (VarP (Name (OccName name1) _))
+                            (UInfixE (VarE (Name (OccName "pure") _))
+                                     (VarE (Name (OccName "$") _))
+                                     _))
+                    :(LetS [ValD (ConP (Name (OccName _) _) [] ls)
+                                 (NormalB (VarE (Name (OccName name2) _))) []])
+                    :_)
+    | name1 == name2 && all var ls = Just (before, after)
+    where var = (\case (VarP (Name (OccName _) _)) -> True
+                       _                           -> False)
 stmt'' _ [] = Nothing
 stmt'' before it = stmt'' (before ++ [head it]) (tail it)
 
-data StmtT = Bind
-           | Print
-           | Return
-           | Ignore
+data StmtType = Bind
+              | Let
+              | Print
+              | Return
+              | Ignore
 
-stmt :: Stmt -> Maybe (Stmt, StmtT)
+stmt :: Stmt -> Maybe (Stmt, StmtType)
 stmt s@(BindS (SigP (VarP _) (ConT _))
               (AppE (VarE (Name (OccName "pure") _)) _)) = Just (s, Bind)
+stmt s@(LetS [ValD (ConP (Name (OccName _) _) [] _)
+                   (NormalB (VarE (Name (OccName _) _))) []]) = Just (s, Let)
 stmt s@(BindS (SigP (VarP (Name (OccName _) _)) (ConT (Name (OccName "()") _)))
               (AppE (VarE (Name (OccName "print") _)) _)) = Just (s, Print)
 stmt s@(NoBindS (AppE (VarE (Name (OccName "print") _)) _)) = Just (s, Print)
@@ -81,16 +104,72 @@ stmt s@(LetS _) = Just (s, Ignore)
 stmt s@(NoBindS _) = Just (s,  Ignore)
 stmt _ = Nothing
 
+dec' :: [Dec] -> CC -> CC
+dec' [] cc = cc
+dec' (DataD [] (Name (OccName name) _) [] Nothing [RecC _ it] [] : tl) cc
+    = dec' tl (M.insert name (map var it) cc)
+    where var (Name (OccName name') _
+              ,Bang NoSourceUnpackedness NoSourceStrictness
+              ,ConT (Name (OccName type') _)
+              ) = (name', type')
+dec' (_:tl) cc = dec' tl cc
+
 main :: IO ()
 main = do
     args <- getArgs
     src <- readFile (head args)
     let Right decs = parseDecs src
-    let val'nt = val (last decs)
-    when (length decs >= 2 && isJust (sig (last (init decs))) && isJust val'nt) $ do
-        let (val', nt) = fromJust val'nt
-        let app = ppr (init decs ++ [val'])
-        print app
-        putStrLn nt
-        exitSuccess
+    when (length decs >= 2) $ do
+        let decs' = init decs
+        let cc = dec' decs' M.empty
+        let val'cnt = val (last decs) cc
+        when (isJust (sig (last decs')) && isJust val'cnt) $ do
+            let (val', cnt) = fromJust val'cnt
+            let app = ppr (decs' ++ [val'])
+            print app
+            putStrLn cnt
+            exitSuccess
+        exitFailure
     exitFailure
+
+exitF :: Stmt
+exitF = NoBindS (VarE (Name (OccName "exitFailure") NameS))
+
+itmp :: [Stmt]
+itmp = [BindS (VarP (Name (OccName "inp_gUgVwYdD8r") NameS))
+              (AppE (VarE (Name (OccName "read_gUgVwYdD8r") NameS)) (LitE (StringL "itmp.XXXXXXXXXX")))
+       ,LetS [ValD (ConP (Name (OccName "JsonI_gUgVwYdD8r") NameS) [] [
+                                                                       WildP
+                                                                      ]
+                   )
+              (NormalB (VarE (Name (OccName "inp_gUgVwYdD8r") NameS))) []]
+       ]
+
+otmp :: (String, String) -> [String] -> [Stmt]
+otmp (c, nt) ns = [NoBindS (AppE (AppE (VarE (Name (OccName "hPutStrLn") NameS))
+                                       (VarE (Name (OccName "stderr") NameS)))
+                                 (ParensE (UInfixE (LitE (StringL c))
+                                                   (VarE (Name (OccName "++") NameS))
+                                                   (UInfixE (LitE (StringL " "))
+                                                            (VarE (Name (OccName "++") NameS))
+                                                            (LitE (StringL nt))))))
+                  ,LetS [ValD (VarP (Name (OccName "out_gUgVwYdD8r") NameS))
+                              (NormalB
+                                       (AppE
+                                        (
+                                         otmp' (reverse (
+                                                         [
+                                                         ] ++ ns
+                                                        )
+                                               )
+                                        )
+                                        (ConE (Name (OccName "Nothing") NameS))
+                                       )
+                              ) []]
+                  ,NoBindS (AppE (AppE (VarE (Name (OccName "write_gUgVwYdD8r") NameS))
+                                       (VarE (Name (OccName "out_gUgVwYdD8r") NameS))) (LitE (StringL "otmp.XXXXXXXXXX")))
+                  ]
+
+otmp' :: [String] -> Exp
+otmp' [name] = (AppE (ConE (Name (OccName "JsonO_gUgVwYdD8r") NameS)) (VarE (Name (OccName name) NameS)))
+otmp' (name:it) = (AppE (otmp' it) (VarE (Name (OccName name) NameS)))

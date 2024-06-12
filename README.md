@@ -107,6 +107,11 @@ The `Scala` source files must have a strict format:
 - variable-bound generators of the `for-yield` must bind a single variable *and*
   be ascribed the type;
 
+- definitions of the `for-yield` must correspond to `case class`es, bind a
+  single variable for each parameter of the `case class`, and the right hand side
+  be a single variable that is bound - immediately preceding the definition - by
+  a generator _without_ an ascribed type (i.e., the `case class`);
+
 - names of variable-bound generators must not contain whitespace; their types may;
 
 - the scope of pattern variables in definitions and generators is limited until
@@ -192,6 +197,11 @@ The `Haskell` source files must have a strict format:
 
 - `do` statements that bind must pattern-match a single variable with type assertion;
 
+- `do` statements that `let` must correspond to a unique-constructor `data`type,
+  bind a single variable for each parameter of the `data`type, and the right hand side
+  be a single variable that is bound - immediately preceding the `let` statement - by
+  a binding _without_ an asserted type (i.e., the `data`type);
+
 - the last `do` statement must be `return ()`;
 
 - must not output to `stderr`.
@@ -224,7 +234,10 @@ The `Scala` source files must have even a stricter format:
 - no `package` statements;
 
 - only simple arithmetic expressions (without division) of type `Int` in the
-  `IO { }` blocks.
+  `IO { }` blocks;
+
+- `case class`es must not share parameter names - as these are translated
+  into `Haskell` unique-constructor `data`types with identical field labels.
 
 Note that both [`Scala Cli`](https://scala-cli.virtuslab.org/)
 and [`Ammonite`](https://ammonite.io/) must be installed, as well as

@@ -32,7 +32,6 @@ executable sc2hs
         random ^>=1.2,
         template-haskell ^>=2.20,
         typed-process ^>=0.2,
-        unliftio ^>=0.2,
         hascalam ^>=0.1
 
     hs-source-dirs:   app
