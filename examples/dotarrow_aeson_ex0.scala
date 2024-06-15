@@ -47,7 +47,7 @@ object π:
 
   given Conversion[`()`, Option[String]] = _.as[Option[String]]
 
-  val bsh: String => String = _.replaceAll("([`\"\\\\$])", "\\\\$1")
+  val bsh: String => String = _.replaceAll("(['`\"\\\\$])", "\\\\$1")
 
   val tmp: String =
     "sh -c 'mktemp -up dotarrow'".!!.stripTrailing.stripPrefix("dotarrow/")
@@ -61,7 +61,7 @@ object π:
     IO.pure(it.flatMap { src =>
       if 0 == s"""sh -c 'echo -n "${bsh(
             src
-          )}" >| "$cwd"/app/Main.hs'""".! && 0 == s"""sh -c 'dotarrowAeson $tmp'""".! && 0 == s"""sh -c 'dotarrowAeson2 $tmp'""".!
+          )}" | sed -e "s/\\\\\\\\'/'/g"                                                           >| "$cwd"/app/Main.hs'""".! && 0 == s"""sh -c 'dotarrowAeson $tmp'""".! && 0 == s"""sh -c 'dotarrowAeson2 $tmp'""".!
       then Some(s"""sh -c 'cat "$cwd"/app/Main.hs'""".!!)
       else None
     })
@@ -92,8 +92,8 @@ object π:
     _  <- (
       IO.unit,
       for {
-        _59073c0a_2fad_4dd9_9812_8eba341480a2 <- IO {
-          def _59073c0a_2fad_4dd9_9812_8eba341480a2(code: `()`): IO[Unit] =
+        _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4 <- IO {
+          def _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -106,13 +106,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run)
-                _    <- _59073c0a_2fad_4dd9_9812_8eba341480a2(code)
+                _    <- _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _59073c0a_2fad_4dd9_9812_8eba341480a2
+          _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4
         }
         code                                  <- ch()(run)
-        _ <- _59073c0a_2fad_4dd9_9812_8eba341480a2(code)
+        _ <- _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4(code)
       } yield (),
       Init(s"""sh -c 'cat "$cwd"/app/Main.hs'""".!!, ch)
     ).parMapN { (_, _, _) => }

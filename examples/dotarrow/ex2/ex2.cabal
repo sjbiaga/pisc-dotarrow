@@ -8,7 +8,7 @@ license:            MIT
 
 license-file:       LICENSE
 
-executable ex1
+executable ex2
     main-is:        Main.hs
 
     other-modules:

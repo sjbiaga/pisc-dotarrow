@@ -49,7 +49,7 @@ object π:
 
   given Conversion[`()`, String] = _.as[String]
 
-  val bsh: String => String = _.replaceAll("([`\"\\\\$])", "\\\\$1")
+  val bsh: String => String = _.replaceAll("(['`\"\\\\$])", "\\\\$1")
 
   def cli(src: String)(args: String*) =
     s"""scala-cli compile "$src" &>/dev/null;                                            scala-cli run "$src" -q -O -nowarn -S 3.5.0-RC1 -- """ + args
@@ -67,7 +67,7 @@ object π:
   def circe(src: String): Option[String] = {
     if 0 == s"""sh -c 'echo -n "${bsh(
           src
-        )}" >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
+        )}" | sed -e "s/\\\\\\\\'/'/g"                                                                              >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
           "../dotarrow/source.scala"
         )(
           s"dotarrow/$tmp.scala"
@@ -80,7 +80,7 @@ object π:
             .mkString("\n");
         if 0 == s"""sh -c 'echo -n "${bsh(
               src
-            )}" >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
+            )}" | sed -e "s/\\\\\\\\'/'/g"                                                                              >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
               s"dotarrow/$tmp.scala"
             )()} 3>&1 1>&2- 2>&3- | sed -e "s/[ ]/\\\\\\\\ /g"                                                                            >> "$cwd".txt'""".! && 0 == s"""sh -c '${cli(
               "../dotarrow/source.scala"
@@ -101,7 +101,7 @@ object π:
     IO.pure(it.flatMap { src =>
       if 0 == s"""sh -c 'echo -n "${bsh(
             src
-          )}" >| "$cwd"/app/Main.hs'""".! && 0 == s"""sh -c 'dotarrowAeson $tmp'""".! && 0 == s"""sh -c 'dotarrowAeson2 $tmp'""".!
+          )}" | sed -e "s/\\\\\\\\'/'/g"                                                           >| "$cwd"/app/Main.hs'""".! && 0 == s"""sh -c 'dotarrowAeson $tmp'""".! && 0 == s"""sh -c 'dotarrowAeson2 $tmp'""".!
       then Some(s"""sh -c 'cat "$cwd"/app/Main.hs'""".!!)
       else None
     })
@@ -109,7 +109,9 @@ object π:
 
   val s2h: String => IO[String] = { src =>
     IO.pure {
-      0 == s"""sh -c 'echo -n "${bsh(src)}" >| "dotarrow/$tmp.scala"'""".!;
+      0 == s"""sh -c 'echo -n "${bsh(
+          src
+        )}" | sed -e "s/\\\\\\\\'/'/g"                                              >| "dotarrow/$tmp.scala"'""".!;
       0 == s"""sh -c 'dotarrowScalaToHaskell $tmp2 $tmp'""".!;
       s"""sh -c 'cat "$cwd/app/Main.hs"'""".!!
     }
@@ -117,15 +119,17 @@ object π:
 
   val h2s: String => IO[String] = { src =>
     IO.pure {
-      0 == s"""sh -c 'echo -n "${bsh(src)}" >| "$cwd"/app/Main.hs'""".!;
+      0 == s"""sh -c 'echo -n "${bsh(
+          src
+        )}" | sed -e "s/\\\\\\\\'/'/g"                                           >| "$cwd"/app/Main.hs'""".!;
       0 == s"""sh -c 'dotarrowHaskellToScala $tmp2 $tmp'""".!;
       s"""sh -c 'cat "dotarrow/$tmp.scala"'""".!!
     }
   }
 
   def Sc2Hs(s2: `()`, hs: `()`): IO[Unit] = for {
-    _7a92d2c9_c5d0_47a1_8668_a56f18351d41 <- IO {
-      def _7a92d2c9_c5d0_47a1_8668_a56f18351d41(src: `()`): IO[Unit] =
+    _0bcfec4c_086c_4653_874b_67d87387bee1 <- IO {
+      def _0bcfec4c_086c_4653_874b_67d87387bee1(src: `()`): IO[Unit] =
         if (!src) IO.cede
         else (
           for {
@@ -137,18 +141,18 @@ object π:
           } yield (),
           for {
             src <- s2()(s2h)
-            _   <- _7a92d2c9_c5d0_47a1_8668_a56f18351d41(src)
+            _   <- _0bcfec4c_086c_4653_874b_67d87387bee1(src)
           } yield ()
         ).parMapN { (_, _) => }
-      _7a92d2c9_c5d0_47a1_8668_a56f18351d41
+      _0bcfec4c_086c_4653_874b_67d87387bee1
     }
     src                                   <- s2()(s2h)
-    _ <- _7a92d2c9_c5d0_47a1_8668_a56f18351d41(src)
+    _ <- _0bcfec4c_086c_4653_874b_67d87387bee1(src)
   } yield ()
 
   def Hs2Sc(h2: `()`, sc: `()`): IO[Unit] = for {
-    _4f488ca2_db76_4003_a127_6c4146996a9e <- IO {
-      def _4f488ca2_db76_4003_a127_6c4146996a9e(src: `()`): IO[Unit] =
+    _64d47807_314d_4204_94d7_32e9f96a52d0 <- IO {
+      def _64d47807_314d_4204_94d7_32e9f96a52d0(src: `()`): IO[Unit] =
         if (!src) IO.cede
         else (
           for {
@@ -160,18 +164,18 @@ object π:
           } yield (),
           for {
             src <- h2()(h2s)
-            _   <- _4f488ca2_db76_4003_a127_6c4146996a9e(src)
+            _   <- _64d47807_314d_4204_94d7_32e9f96a52d0(src)
           } yield ()
         ).parMapN { (_, _) => }
-      _4f488ca2_db76_4003_a127_6c4146996a9e
+      _64d47807_314d_4204_94d7_32e9f96a52d0
     }
     src                                   <- h2()(h2s)
-    _ <- _4f488ca2_db76_4003_a127_6c4146996a9e(src)
+    _ <- _64d47807_314d_4204_94d7_32e9f96a52d0(src)
   } yield ()
 
   def Aeson(hs: `()`, h2: `()`, ch: `()`): IO[Unit] = for {
-    _4dd5cd55_2a94_4d5a_b772_47f17e216522 <- IO {
-      def _4dd5cd55_2a94_4d5a_b772_47f17e216522(code: `()`): IO[Unit] =
+    _9ed5c1f9_bc0c_4c6d_acff_a4fde5728355 <- IO {
+      def _9ed5c1f9_bc0c_4c6d_acff_a4fde5728355(code: `()`): IO[Unit] =
         if (!code) IO.cede
         else (
           if (code.nonEmpty ==== true) for {
@@ -184,18 +188,18 @@ object π:
           else for (_ <- ch(ch)) yield (),
           for {
             code <- hs()(h2h)
-            _    <- _4dd5cd55_2a94_4d5a_b772_47f17e216522(code)
+            _    <- _9ed5c1f9_bc0c_4c6d_acff_a4fde5728355(code)
           } yield ()
         ).parMapN { (_, _) => }
-      _4dd5cd55_2a94_4d5a_b772_47f17e216522
+      _9ed5c1f9_bc0c_4c6d_acff_a4fde5728355
     }
     code                                  <- hs()(h2h)
-    _ <- _4dd5cd55_2a94_4d5a_b772_47f17e216522(code)
+    _ <- _9ed5c1f9_bc0c_4c6d_acff_a4fde5728355(code)
   } yield ()
 
   def Circe(sc: `()`, s2: `()`, ch: `()`): IO[Unit] = for {
-    _0bbc391c_8151_4287_9aae_dc1dbca1b2f1 <- IO {
-      def _0bbc391c_8151_4287_9aae_dc1dbca1b2f1(code: `()`): IO[Unit] =
+    _01cbe2c8_fff9_4f24_9aa9_87e0afed2bbf <- IO {
+      def _01cbe2c8_fff9_4f24_9aa9_87e0afed2bbf(code: `()`): IO[Unit] =
         if (!code) IO.cede
         else (
           if (code.nonEmpty ==== true) for {
@@ -208,13 +212,13 @@ object π:
           else for (_ <- ch(ch)) yield (),
           for {
             code <- sc()(s2s)
-            _    <- _0bbc391c_8151_4287_9aae_dc1dbca1b2f1(code)
+            _    <- _01cbe2c8_fff9_4f24_9aa9_87e0afed2bbf(code)
           } yield ()
         ).parMapN { (_, _) => }
-      _0bbc391c_8151_4287_9aae_dc1dbca1b2f1
+      _01cbe2c8_fff9_4f24_9aa9_87e0afed2bbf
     }
     code                                  <- sc()(s2s)
-    _ <- _0bbc391c_8151_4287_9aae_dc1dbca1b2f1(code)
+    _ <- _01cbe2c8_fff9_4f24_9aa9_87e0afed2bbf(code)
   } yield ()
 
   def Start(src: `()`, s2: `()`, ch: `()`): IO[Unit] = for {

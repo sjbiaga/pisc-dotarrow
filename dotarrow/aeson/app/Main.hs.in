@@ -6,7 +6,6 @@ import Language.Haskell.TH.Ppr
 import Language.Haskell.TH.Syntax
 
 import Control.Monad (when)
-import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Maybe
 import System.Environment
@@ -56,7 +55,7 @@ stmt' (me@(BindS (VarP (Name (OccName name1) _))
             oae = otmp (n, name_tpe) name's
         in ((iae ++ me : my : before) ++ (oae ++ exitF : after), n ++ " " ++ name_tpe)
       ) <$> stmt'' [] it
-    where name_tpe = intercalate " " (zipWith (\n t -> n ++ " " ++ t) name's tpe's)
+    where name_tpe = unwords (zipWith (\n t -> n ++ " " ++ t) name's tpe's)
           n = show (length ls)
           var = (\case (VarP (Name (OccName _) _)) -> True
                        _                           -> False)
@@ -64,7 +63,7 @@ stmt' (me@(BindS (VarP (Name (OccName name1) _))
           tpe's = map snd (fromJust (M.lookup name cc))
 stmt' [NoBindS (AppE (VarE (Name (OccName "return") _))
                      (ConE (Name (OccName "()") _)))] _ = Nothing
-stmt' [] _ = fail "end statement must be `return ()'"
+stmt' [] _ = error "end statement must be `return ()'"
 stmt' (hd:tl) cc = (\(it, cnt) -> (hd:it, cnt)) <$> stmt' tl cc
 
 stmt'' :: [Stmt] -> [Stmt] -> Maybe ([Stmt], [Stmt])

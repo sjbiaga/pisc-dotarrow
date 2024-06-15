@@ -13,7 +13,7 @@ amm exp =
        do
           (out, _) <- readProcess_ (proc "amm" ["-c", i ++ i2 ++ pr])
           return (unpack out)
-    where i = "import $ivy.`org.scalameta:scalameta_2.13:4.9.5`;"
+    where i = "import $ivy.`org.scalameta:scalameta_2.13:4.9.6`;"
           i2 = "import scala.meta._; import dialects.Scala3;"
           pr = "print(\"\"\"" ++ exp ++ "\"\"\".parse[Term].get.structure)"
 

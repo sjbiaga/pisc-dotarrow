@@ -1,0 +1,231 @@
+/*
+ * Copyright (c) 2023-2024 Sebastian I. Gliţa-Catina <gseba@users.sourceforge.net>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * [Except as contained in this notice, the name of Sebastian I. Gliţa-Catina
+ * shall not be used in advertising or otherwise to promote the sale, use
+ * or other dealings in this Software without prior written authorization
+ * from Sebastian I. Gliţa-Catina.]
+ */
+
+//> using dep org.scalameta:scalameta_2.13:4.9.6
+//> using dep org.typelevel::cats-effect:3.6-0142603
+
+import scala.annotation.tailrec
+
+import scala.meta._
+import dialects.Scala3
+
+import cats.effect.{ IO, IOApp, ExitCode }
+
+
+type CC = Map[String, List[(String, String)]]
+
+object App extends IOApp:
+
+  private val app =
+
+
+  extension[S](self: S)
+    def ::(pair: (List[S], CC)) = (self :: pair._1) -> pair._2
+
+  val src: Source => Option[(Source, CC)] = {
+    case Source(it) =>
+      sts(it -> Map[String, List[(String, String)]]()).map(Source(_) -> _)
+  }
+
+  def sts: ((List[Stat], CC)) => Option[(List[Stat], CC)] = {
+    case ((pk: Pkg) :: it, cc) =>
+      pkg(pk -> cc).flatMap { (pk, cc) => sts(it -> cc).map(pk :: _) }
+    case ((im: Import) :: it, cc) =>
+      sts(it -> cc).map { (it, cc) => (im :: it) -> cc }
+    case ((cl: Defn.Class) :: it, cc) =>
+      cls(cl -> cc).flatMap { (cl, cc) => sts(it -> cc).map(cl :: _) }
+    case ((ob: Defn.Object) :: it, cc) =>
+      obj(ob -> cc).flatMap { ob => sts(it -> cc).map(ob :: _) }
+    case (ls, cc) => Some(ls -> cc)
+  }
+
+  def pkg: ((Pkg, CC)) => Option[(Pkg, CC)] = {
+    case (Pkg(ref, it), cc) =>
+      sts(it -> cc).map(Pkg(ref, _) -> _)
+  }
+
+  val cls: ((Defn.Class, CC)) => Option[(Defn.Class, CC)] = {
+    case (cl @ Defn.Class(Mod.Case() :: Nil,
+                         Type.Name(name),
+                         Nil,
+                         Ctor.Primary(Nil, Name.Anonymous(), params :: Nil),
+                         Template(Nil, Nil, Self(Name.Anonymous(), None), Nil)), cc) =>
+      val name_type = params
+        .foldLeft(List[(String, String)]()) {
+          case (r, Term.Param(_, Name(name), Some(Type.Name(tpe)), None)) => r :+ (name -> tpe)
+        }
+      Some(cl -> cc.updated(name, name_type))
+    case _ => None
+  }
+
+  val obj: ((Defn.Object, CC)) => Option[Defn.Object] = {
+    case (ob @ Defn.Object(Nil, _, it), cc) =>
+      tmp(it -> cc).map { tm => ob.copy(templ = tm) }
+  }
+
+  val tmp: ((Template, CC)) => Option[Template] = {
+    case (my @ Template(Nil, List(Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Nil)), _, (df: Defn.Def) :: it), cc) =>
+      io.dfn(df -> cc).map { io_df => my.copy(stats = io_df :: it) }
+    case _ => None
+  }
+
+  override def run(_args: List[String]): IO[ExitCode] =
+    IO(src(app))
+      .map(_.map(_._1).map(println(_)).nonEmpty)
+      .ifM(IO.pure(ExitCode.Success), IO.pure(ExitCode.Error))
+
+
+private object io:
+
+  val dfn: ((Defn.Def, CC)) => Option[Defn.Def] = {
+    case (my @ Defn.Def(List(Mod.Override()), Term.Name("run"), Nil, _, Some(Type.Apply(Type.Name("IO"), List(Type.Name("Unit")))), it: Term.ForYield), cc) =>
+      f_y(it -> cc).map { fy =>
+        val ls: List[Stat] = List(
+                                 ).reverse
+        my.copy(body = Term.Block(ls :+ fy))
+      }
+    case _ => None
+  }
+
+  private val f_y: ((Term.ForYield, CC)) => Option[Term.ForYield] = {
+    case (my @ Term.ForYield(it, Lit.Unit()), cc) =>
+      enu(it -> cc).map { ls => my.copy(enums = ls) }
+  }
+
+  private val enu: ((List[Enumerator], CC)) => Option[List[Enumerator]] = {
+    case ((my @ Enumerator.Generator(Pat.Typed(Pat.Var(Term.Name(name)), Type.Name(tpe)), Term.Apply(Term.Name("IO"), List(Term.Block(_))))) :: it, _) =>
+      en2(it).map { case (before, after) =>
+        val ic = itmp
+        val oc = otmp(List(name -> tpe))
+
+        (ic :: my :: before) ++
+        (oc :: IOcanceled :: after)
+      }
+    case ((me @ (Enumerator.Generator(Pat.Var(Term.Name(name1)), Term.Apply(Term.Name("IO"), List(Term.Block(List(expr))))))) ::
+          (my @ Enumerator.Val(Pat.Extract(Term.Name(name), ls), Term.Apply(Term.ApplyType(Term.Name("to"), List(Type.Name(name_))), List(Term.Name(name2))))) :: it, cc)
+        if name == name_ && name1 == name2
+        && ls.forall { case Pat.Var(Term.Name(_)) => true case _ => false }
+        && cc.contains(name) =>
+      val ps = cc(name)
+      val nt = ls.zipWithIndex.map {
+        case (Pat.Var(Term.Name(name)), i) => name -> ps(i)._2
+      }
+      en2(it).map { case (before, after) =>
+        val me = Enumerator.Generator(Pat.Var(Term.Name(name1)),
+                                      Term.Apply(Term.Name("IO"),
+                                                 List(Term.Block(exp(expr) :: Nil))))
+        val ic = itmp
+        val oc = otmp(nt)
+
+        (ic :: me :: my :: before) ++
+        (oc :: IOcanceled :: after)
+      }
+    case (Enumerator.Generator(Pat.Wildcard(), Term.Select(Term.Apply(Term.Name("IO"), _), Term.Name("void"))) :: Nil, _) => None
+    case (Nil, _) => ???
+    case (hd :: it, cc) =>
+      enu(it -> cc).map(hd :: _)
+  }
+
+  private val exp: Stat => Stat = {
+    case it @ Term.ApplyInfix(lhs, _, Nil, rhs :: Nil) =>
+      it.copy(lhs = hs2(lhs), args = hs2(rhs) :: Nil)
+    case it @ Term.ApplyUnary(_, lhs) =>
+      it.copy(arg = hs2(lhs))
+  }
+
+  private val hs2: Term => Term = {
+    case it: Term.Name => Term.Apply(Term.Name("fromInt"), Term.ArgClause(it :: Nil, None))
+    case it: Lit.Int => Term.Apply(Term.Name("fromInt"), Term.ArgClause(it :: Nil, None))
+    case it @ Term.ApplyInfix(lhs, _, Nil, rhs :: Nil) =>
+      it.copy(lhs = hs2(lhs), args = hs2(rhs) :: Nil)
+    case it @ Term.ApplyUnary(_, lhs) =>
+      it.copy(arg = hs2(lhs))
+  }
+
+  @tailrec
+  private def en2(ls: List[Enumerator],
+                  before: List[Enumerator] = Nil): Option[(List[Enumerator], List[Enumerator])] = ls match {
+    case after @ Enumerator.Generator(Pat.Wildcard(), Term.Select(Term.Apply(Term.Name("IO"), _), Term.Name("void"))) :: _ => Some(before -> after)
+    case after @ Enumerator.Generator(Pat.Typed(Pat.Var(Term.Name(_)), Type.Name(_)), _) :: _ => Some(before -> after)
+    case after @ Enumerator.Generator(Pat.Var(Term.Name(name1)), Term.Apply(Term.Name("IO"), List(Term.Block(List(_)))))
+              :: Enumerator.Val(Pat.Extract(Term.Name(name), ls), Term.Apply(Term.ApplyType(Term.Name("to"), List(Type.Name(name_))), List(Term.Name(name2)))) :: _
+        if name == name_ && name1 == name2
+        && ls.forall { case Pat.Var(Term.Name(_)) => true case _ => false } => Some(before -> after)
+    case Enumerator.Guard(_) :: _ => ???
+    case Nil => None
+    case it :: tl => en2(tl, before :+ it)
+  }
+
+  private val IOcanceled = Enumerator.Generator(Pat.Wildcard(), Term.Select(Term.Name("IO"), Term.Name("canceled")))
+
+  private val itmp =
+    Enumerator.Generator(Pat.Wildcard(),
+                         Term.Apply(Term.Name("IO"),
+                                    Term.ArgClause(List(Term.Block(List(
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("scala")), Term.Name("io")), List(Importee.Name(Name("Source")))))),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("io")), Term.Name("circe")), Term.Name("generic")), Term.Name("auto")), List(Importee.Wildcard())))),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("io")), Term.Name("circe")), Term.Name("syntax")), List(Importee.Wildcard())))),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("io")), Term.Name("circe")), Term.Name("parser")), List(Importee.Wildcard())))),
+                                                                     Defn.Class(List(Mod.Case()), Type.Name("itmp.XXXXXXXXXX"), Type.ParamClause(Nil), Ctor.Primary(Nil, Name.Anonymous(), List(Term.ParamClause(List(
+                                                                                                                                                                                                                 ).reverse, None))),
+                                                                                Template(Nil, Nil, Self(Name.Anonymous(), None), Nil, Nil)),
+                                                                     Defn.Var(Nil, List(Pat.Var(Term.Name("source"))), Some(Type.Name("Source")), Lit.Null()),
+                                                                     Term.Try(Term.Block(List(
+                                                                                           Term.Assign(Term.Name("source"), Term.Apply(Term.Select(Term.Name("Source"), Term.Name("fromFile")), Term.ArgClause(List(Lit.String("tmp.XXXXXXXXXX")), None))),
+                                                                                           Defn.Val(Nil, List(Pat.Var(Term.Name("json"))), None, Term.Select(Term.Select(Term.ApplyType(Term.Select(Term.Select(Term.Select(Term.Apply(Term.Name("parse"), Term.ArgClause(List(Term.Select(Term.Select(Term.Name("source"), Term.Name("getLines")), Term.Name("mkString"))), None)), Term.Name("right")), Term.Name("get")), Term.Name("as")), Type.ArgClause(List(Type.Name("itmp.XXXXXXXXXX")))), Term.Name("right")), Term.Name("get"))),
+                                                                                         )),
+                                                                              Nil,
+                                                                              Some(Term.If(Term.ApplyInfix(Term.Name("source"), Term.Name("ne"), Type.ArgClause(Nil), Term.ArgClause(List(Lit.Null()), None)), Term.Apply(Term.Select(Term.Name("source"), Term.Name("close")), Term.ArgClause(Nil, None)), Lit.Unit(), Nil)))))), None)))
+
+  private def otmp(nt: List[(String, String)]) =
+    val ps = nt.map { (name, tpe) => Term.Param(Nil, Term.Name(name), Some(Type.Name(tpe)), None) }
+    val ns = nt.map { (name, _) => Term.Name(name) }
+    Enumerator.Generator(Pat.Wildcard(),
+                         Term.Apply(Term.Name("IO"),
+                                    Term.ArgClause(List(Term.Block(List(
+                                                                     Term.Apply(Term.Select(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("scala")), Term.Name("Console")), Term.Name("err")), Term.Name("println")), Term.ArgClause(List(Lit.String(s"${nt.size}" + ' ' + nt.map(_ + ' ' + _).mkString(" "))), None)),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("java")), Term.Name("io")), List(Importee.Name(Name("FileWriter")), Importee.Name(Name("BufferedWriter")))))),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("java")), Term.Name("nio")), Term.Name("charset")), List(Importee.Name(Name("Charset")))))),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("java")), Term.Name("nio")), Term.Name("file")), List(Importee.Name(Name("Paths")))))),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("io")), Term.Name("circe")), Term.Name("generic")), Term.Name("auto")), List(Importee.Wildcard())))),
+                                                                     Import(List(Importer(Term.Select(Term.Select(Term.Select(Term.Name("_root_"), Term.Name("io")), Term.Name("circe")), Term.Name("syntax")), List(Importee.Wildcard())))),
+                                                                     Defn.Class(List(Mod.Case()), Type.Name("otmp.XXXXXXXXXX"), Type.ParamClause(Nil), Ctor.Primary(Nil, Name.Anonymous(), List(Term.ParamClause(List(
+                                                                                                                                                                                                                 ).reverse ++ ps, None))), Template(Nil, Nil, Self(Name.Anonymous(), None), Nil, Nil)),
+                                                                     Defn.Var(Nil, List(Pat.Var(Term.Name("fwr"))), Some(Type.Name("FileWriter")), Lit.Null()),
+                                                                     Defn.Var(Nil, List(Pat.Var(Term.Name("bwr"))), Some(Type.Name("BufferedWriter")), Lit.Null()),
+                                                                     Term.Try(Term.Block(List(
+                                                                                           Term.Assign(Term.Name("fwr"), Term.Apply(Term.Name("FileWriter"), Term.ArgClause(List(Term.Select(Term.Apply(Term.Select(Term.Name("Paths"), Term.Name("get")), Term.ArgClause(List(Lit.String("tmp.XXXXXXXXXX")), None)), Term.Name("toString")), Term.Apply(Term.Select(Term.Name("Charset"), Term.Name("forName")), Term.ArgClause(List(Lit.String("UTF-8")), None))), None))),
+                                                                                           Term.Assign(Term.Name("bwr"), Term.Apply(Term.Name("BufferedWriter"), Term.ArgClause(List(Term.Name("fwr")), None))),
+                                                                                           Defn.Val(Nil, List(Pat.Var(Term.Name("json"))), None, Term.Select(Term.Select(Term.Apply(Term.Name("otmp.XXXXXXXXXX"), Term.ArgClause(List(
+                                                                                                                                                                                                                                 ).reverse ++ ns, None)), Term.Name("asJson")), Term.Name("toString"))),
+                                                                                           Term.Apply(Term.Select(Term.Name("bwr"), Term.Name("write")), Term.ArgClause(List(Term.Name("json"), Lit.Int(0), Term.Select(Term.Name("json"), Term.Name("length"))), None))
+                                                                                         )),
+                                                                              Nil,
+                                                                              Some(Term.Block(List(
+                                                                                                Term.If(Term.ApplyInfix(Term.Name("bwr"), Term.Name("ne"), Type.ArgClause(Nil), Term.ArgClause(List(Lit.Null()), None)), Term.Apply(Term.Select(Term.Name("bwr"), Term.Name("close")), Term.ArgClause(Nil, None)), Lit.Unit(), Nil),
+                                                                                                Term.If(Term.ApplyInfix(Term.Name("fwr"), Term.Name("ne"), Type.ArgClause(Nil), Term.ArgClause(List(Lit.Null()), None)), Term.Apply(Term.Select(Term.Name("fwr"), Term.Name("close")), Term.ArgClause(Nil, None)), Lit.Unit(), Nil)))))))), None)))

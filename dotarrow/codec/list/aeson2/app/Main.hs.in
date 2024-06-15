@@ -1,0 +1,84 @@
+{-# LANGUAGE LambdaCase #-}
+module Main where
+
+import Language.Haskell.Meta.Parse
+import Language.Haskell.TH.Ppr
+import Language.Haskell.TH.Syntax
+
+import Control.Monad (when)
+import Data.Maybe
+import System.Environment
+import System.Exit (exitSuccess, exitFailure)
+
+
+sig :: Dec -> Maybe Dec
+sig s@(SigD (Name (OccName "main") _)
+            (AppT (ConT (Name (OccName "IO") _))
+                  (ConT (Name (OccName "()") _)))) = Just s
+sig _ = Nothing
+
+val :: Dec -> Maybe Dec
+val v@(ValD m@(VarP (Name (OccName "main") _))
+              (NormalB (DoE Nothing ss)) []) = v'
+    where v' = (\it -> ValD m (NormalB (DoE Nothing it)) []) <$> stmt [
+                                                                      ] ss
+val _ = Nothing
+
+stmt :: [(String, String)] -> [Stmt] -> Maybe [Stmt]
+stmt name_tpe (BindS _ _
+              :LetS _
+              :BindS (SigP (VarP (Name (OccName name') _))
+                           (ConT (Name (OccName tpe') _))) _
+              :it)
+    | name_tpe == [(name', tpe')]
+    = stmt' name_tpe it
+stmt name_tpe (BindS (VarP (Name (OccName name1) _))
+                     (UInfixE (VarE (Name (OccName "pure") _))
+                              (VarE (Name (OccName "$") _))
+                              _)
+              :LetS [ValD (ConP (Name (OccName name) _) [] ls)
+                    (NormalB (AppE (VarE (Name (OccName name_) _))
+                                   (VarE (Name (OccName name2) _)))) []]
+              :it)
+    | name_ == "to" ++ name ++ "'" && name1 == name2 && all var ls && names == map fst name_tpe
+    = stmt' (zip names (map snd name_tpe)) it
+    where names = map (\case (VarP (Name (OccName name) _)) -> name) ls
+          var = \case (VarP (Name (OccName _) _)) -> True
+                      _                           -> False
+stmt _ [] = Nothing
+stmt nt (_:it) = stmt nt it
+
+stmt' :: [(String, String)] -> [Stmt] -> Maybe [Stmt]
+stmt' name_tpe it = stmt'' (c, nt) it
+    where c = show (length name_tpe)
+          nt = unwords (map (\(n,t) -> n ++ " " ++ t) name_tpe)
+
+stmt'' :: (String, String) -> [Stmt] -> Maybe [Stmt]
+stmt'' (c, nt) (NoBindS (AppE (AppE (VarE (Name (OccName "hPutStrLn") _))
+                                    (VarE (Name (OccName "stderr") _)))
+                              (ParensE (UInfixE (LitE (StringL c'))
+                                                (VarE (Name (OccName "++") _))
+                                                (UInfixE (LitE (StringL " "))
+                                                         (VarE (Name (OccName "++") _))
+                                                         (LitE (StringL nt'))))))
+                :LetS _
+                :NoBindS _
+                :NoBindS (VarE (Name (OccName "exitFailure") _))
+                :it)
+    | c == c' && nt == nt' = Just it
+stmt'' _ _ = Nothing
+
+main :: IO ()
+main = do
+    args <- getArgs
+    src <- readFile (head args)
+    let Right decs = parseDecs src
+    when (length decs >= 2) $ do
+        let decs' = init decs
+        let val' = val (last decs)
+        when (isJust (sig (last decs')) && isJust val') $ do
+            let app = ppr (decs' ++ [fromJust val'])
+            print app
+            exitSuccess
+        exitFailure
+    exitFailure

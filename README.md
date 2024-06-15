@@ -245,3 +245,29 @@ and [`Ammonite`](https://ammonite.io/) must be installed, as well as
 `Perl`script [`bin/Scalameta2Haskell.pl`](https://github.com/sjbiaga/pisc-dotarrow/blob/main/bin/Scalameta2Haskell.pl)
 must be available in the `PATH`.
 
+Codecs
+------
+
+`Codec`s is the codename for encoding "programs" as numeric expressions:
+
+- in `Scala` via providing an `implicit` `object` extending the `Numeric` trait;
+
+- in `Haskell` via providing an `instance` of the `Num` class.
+
+There are currently two implementation of codecs:
+
+- lists of integers that can be added, negated or subtracted; the multiplication
+  operator is used to concatenate lists, e.g.,
+
+    ./examples $ pi dotarrow_list_aeson_ex0.scala -- ex3
+    ./examples $ pi dotarrow_list_circe_ex0.scala -- ex11
+
+- an expression `DSL` that mirrors the native numeric expressions, e.g.,
+
+    ./examples $ pi dotarrow_idem_aeson_ex0.scala -- ex4
+    ./examples $ pi dotarrow_idem_circe_ex0.scala -- ex12
+
+In the latter `DSL` case, for example, the integers - either variables
+of type `Int` that have been previously bound, or literals - are wrapped
+within `fromInt` in an "invisible" step before the main program is run,
+and the numeric operations are actually performed with `DSL` values.

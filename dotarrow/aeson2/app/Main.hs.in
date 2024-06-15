@@ -6,7 +6,6 @@ import Language.Haskell.TH.Ppr
 import Language.Haskell.TH.Syntax
 
 import Control.Monad (when)
-import Data.List (intercalate)
 import Data.Maybe
 import System.Environment
 import System.Exit (exitSuccess, exitFailure)
@@ -51,7 +50,7 @@ stmt nt (_:it) = stmt nt it
 stmt' :: [(String, String)] -> [Stmt] -> Maybe [Stmt]
 stmt' name_tpe it = stmt'' (c, nt) it
     where c = show (length name_tpe)
-          nt = intercalate " " (map (\(n,t) -> n ++ " " ++ t) name_tpe)
+          nt = unwords (map (\(n,t) -> n ++ " " ++ t) name_tpe)
 
 stmt'' :: (String, String) -> [Stmt] -> Maybe [Stmt]
 stmt'' (c, nt) (NoBindS (AppE (AppE (VarE (Name (OccName "hPutStrLn") _))

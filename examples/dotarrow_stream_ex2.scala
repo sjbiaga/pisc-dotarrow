@@ -47,7 +47,7 @@ object π:
 
   given Conversion[`()`, Option[String]] = _.as[Option[String]]
 
-  val bsh: String => String = _.replaceAll("([`\"\\\\$])", "\\\\$1")
+  val bsh: String => String = _.replaceAll("(['`\"\\\\$])", "\\\\$1")
 
   def cli(src: String)(args: String*) =
     s"""scala-cli compile "$src" &>/dev/null;                                            scala-cli run "$src" -q -O -nowarn -S 3.5.0-RC1 -- """ + args
@@ -67,7 +67,7 @@ object π:
     IO.pure(it.flatMap { src =>
       if 0 == s"""sh -c 'echo -n "${bsh(
             src
-          )}" >| "dotarrow/${tmp}_ex2.scala"'""".! && 0 == s"""sh -c '${cli(
+          )}" | sed -e "s/\\\\\\\\'/'/g"                                                                                    >| "dotarrow/${tmp}_ex2.scala"'""".! && 0 == s"""sh -c '${cli(
             "../dotarrow/source.scala"
           )(
             s"dotarrow/${tmp}_ex2.scala"
@@ -81,7 +81,7 @@ object π:
               .mkString("\n");
           if 0 == s"""sh -c 'echo -n "${bsh(
                 src
-              )}" >| "dotarrow/${tmp}_ex2.scala"'""".! && 0 == s"""sh -c '${cli(
+              )}" | sed -e "s/\\\\\\\\'/'/g"                                                                                    >| "dotarrow/${tmp}_ex2.scala"'""".! && 0 == s"""sh -c '${cli(
                 s"dotarrow/${tmp}_ex2.scala"
               )()} 3>&1 1>&2- 2>&3- | sed -e "s/[ ]/\\\\\\\\ /g"                                                                  >> "dotarrow/tmp/${tmp}_ex2.scala.txt"'""".! && 0 == s"""sh -c '${cli(
                 "../dotarrow/source.scala"

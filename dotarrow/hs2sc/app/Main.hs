@@ -95,7 +95,7 @@ gen (LetS [ValD (ConP (Name (OccName name') _) [] it) (NormalB (VarE (Name (OccN
     where pat (VarP (Name (OccName name) _)) = PVar (SmVarP (SmNameT name))
 gen (BindS (SigP (VarP (Name (OccName name) _))
                  (ConT (Name (OccName type') _)))
-           (AppE (VarE (Name (OccName _) _)) it)
+           (AppE (VarE (Name (OccName "pure") _)) it)
     ) = do
         exp' <- $(S.exp) (ppr it)
         return $ $(Q.gn4) (name, type', exp')

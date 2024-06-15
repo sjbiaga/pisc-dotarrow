@@ -71,6 +71,19 @@ function dotarrowCountPreLast() {
     fi
 }
 
+function dotarrowCount() {
+    expr $(cat "$1" | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
+}
+
+function dotarrowCountPreLast() {
+    if [ `cat "$1" | tail -n 2 | wc -l` -eq 2 ]
+    then
+        expr $(cat "$1" | tail -n 2 | head -n 1 | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
+    else
+        echo 0
+    fi
+}
+
 function dotarrowCountLast() {
     expr $(cat "$1" | tail -n 1 | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
 }
@@ -125,6 +138,7 @@ function dotarrowScalaToHaskell0() {
                 local tpe="${tpe%% *}"
             fi
             sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+            local c=,
         done
     fi
     [ $n -eq 0 ] || local c=,
@@ -183,7 +197,7 @@ function dotarrowHaskellToScala() {
     sed -e 's/Init.Type.Select.Term.Name."IOApp".,.Type.Name."Simple"..,.Name.Anonymous.., Nil./Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Seq())/' \
         -e 's/Init.Type.Name.\(["][^"]\+["]\).,.Name.Anonymous..,.Nil./Init(Type.Name(\1), Name.Anonymous(), Seq())/g' \
         -i "$r.scala.src"
-    amm -c 'import $ivy.`org.scalameta:scalameta_2.13:4.9.5`;
+    amm -c 'import $ivy.`org.scalameta:scalameta_2.13:4.9.6`;
             import scala.meta._; import dialects.Scala3;
             print('"`cat \"$r.scala.src\"`"')' 2>/dev/null >| "$x/$2.scala"
     sed -i "$q.json" -e '/dummy_gUgVwYdD8r/d'
@@ -237,6 +251,7 @@ function dotarrowAeson0() {
                 local tpe="${tpe%% *}"
             fi
             sed -i "$p/app/Out_"*.hs -e "/[}]/i${_24}${c:-\\ }\ $name\ ::\ $tpe"
+            local c=,
         done
     fi
     [ $n -eq 0 ] || local c=,
@@ -245,9 +260,9 @@ function dotarrowAeson0() {
 }
 
 function dotarrowAeson() {
-    [ $# -eq 1 ] || return
+    [ $# -le 2 ] || return
     local x=dotarrow
-    local app="../$x/aeson"
+    local app="../$x/${2:-.}/aeson"
     local p="`readlink -m \"$x/tmp/$1\"`"
     local n=`cat "$p/app/Main.hs" | grep -n '^\\s*import' | awk -F: '{ print $1 }' | sort -n | tail -n 1`
     cat "$p/app/Main.hs" | head -n $n >| "$p.tmp"
@@ -276,8 +291,8 @@ function dotarrowAeson() {
             sed -i Main.hs \
                 -e "/WildP/i${_70}${c:-\\ }VarP\ (Name\ (OccName\ \"$name\")\ NameS)" \
                 -e "/[]].[+][+].ns/i${_57}${c:-\\ }\"$name\""
+            local c=,
         done
-        local c=,
     done
     if [ -s "$p.txt" ]
     then
@@ -290,20 +305,21 @@ function dotarrowAeson() {
         -e "/itmp.XXXXXXXXXX/s|itmp.XXXXXXXXXX|$p.json|" \
         -e "/otmp.XXXXXXXXXX/s|otmp.XXXXXXXXXX|$p.json.out|"
     dotarrowAeson0 "$1"
-    cat "$p.tmp" | head -n -1 >| "$p/app/Main.hs"
+    cat "$p.tmp" | head -n -1 |
+    sed -e 's/GHC.\(Num\|Types\).//g' >| "$p/app/Main.hs"
     rm "$p.tmp" &>/dev/null
     pushd "$p/app" &>/dev/null
     stack build &>/dev/null
-    stack run 3>&1 1>&2- 2>&3- | sed -e 's/[ ]/\\ /g' >> "$p.txt"
+    stack run 3>&1 1>&2- 2>&3- | sed -e 's/[ ]/\\ /g' >> "$p.txt" || return 1
     popd &>/dev/null
     mv "$p.json"{.out,}
     return 0
 }
 
 function dotarrowAeson2() {
-    [ $# -eq 1 ] || return
+    [ $# -le 2 ] || return
     local x=dotarrow
-    local app="../$x/aeson2"
+    local app="../$x/${2:-.}/aeson2"
     local p="`readlink -m \"$x/tmp/$1\"`"
     local n=`cat "$p/app/Main.hs" | grep -n '^\\s*import' | awk -F: '{ print $1 }' | sort -n | tail -n 1`
     cat "$p/app/Main.hs" | head -n $n >| "$p.tmp"
@@ -334,20 +350,23 @@ function dotarrowAeson2() {
     stack build &>/dev/null
     stack run -- "$p/app/Main.hs" >> "$p.tmp" || return 1
     popd &>/dev/null
-    mv "$p.tmp" "$p/app/Main.hs"
+    cat "$p.tmp" |
+    sed -e 's/GHC.\(Num\|Types\).//g' >| "$p/app/Main.hs"
     rm "$p.tmp" &>/dev/null
     return 0
 }
 
 function dotarrowCirce() {
-    [ $# -eq 1 ] || return
+    [ $# -le 2 ] || return
     local x=dotarrow
-    local app="../$x/circe/app.scala.in"
+    local app="../$x/${2:-.}/circe/app.scala.in"
     local n=`cat "$app" | grep -n '^..private.val.app' | awk -F: '{ print $1 }'`
     cat "$app" | head -n $n >| "$x/tmp/$1.tmp"
     cat "$x/src/$1.scala.src" |
     sed -e 's/Init.Type.Select.Term.Name."IOApp".,.Type.Name."Simple"..,.Name.Anonymous.., Nil./Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Seq())/' \
         -e 's/Init.Type.Name.\(["][^"]\+["]\).,.Name.Anonymous..,.Nil./Init(Type.Name(\1), Name.Anonymous(), Seq())/g' \
+        -e 's/Init.Type.Apply.Type.Name."Numeric".,.Type.ArgClause.List.Type.Name."Encoding"....,.Name.Anonymous..,.Nil./Init(Type.Apply(Type.Name("Numeric"), Type.ArgClause(List(Type.Name("Encoding")))), Name.Anonymous(), Seq())/g' \
+        -e 's/Ctor.Primary.Nil,.Name.Anonymous..,.Nil./Ctor.Primary(Nil, Name.Anonymous(), Seq())/g' \
         -e 's/^/    /' >> "$x/tmp/$1.tmp"
     cat "$app" | tail -n +`expr $n + 1` |
     sed -e '/[io]tmp.XXXXXXXXXX/s/\([io]\)tmp.XXXXXXXXXX/\1'"$1/g" \
@@ -379,14 +398,16 @@ function dotarrowCirce() {
 }
 
 function dotarrowCirce2() {
-    [ $# -eq 1 ] || return
+    [ $# -le 2 ] || return
     local x=dotarrow
-    local app2="../$x/circe/app2.scala.in"
+    local app2="../$x/${2:-.}/circe/app2.scala.in"
     local n=`cat "$app2" | grep -n '^..private.val.app' | awk -F: '{ print $1 }'`
     cat "$app2" | head -n $n >| "$x/tmp/$1.tmp"
     cat "$x/src/$1.scala.src" |
     sed -e 's/Init.Type.Select.Term.Name."IOApp".,.Type.Name."Simple"..,.Name.Anonymous.., Nil./Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Seq())/' \
         -e 's/Init.Type.Name.\(["][^"]\+["]\).,.Name.Anonymous..,.Nil./Init(Type.Name(\1), Name.Anonymous(), Seq())/g' \
+        -e 's/Init.Type.Apply.Type.Name."Numeric".,.Type.ArgClause.List.Type.Name."Encoding"....,.Name.Anonymous..,.Nil./Init(Type.Apply(Type.Name("Numeric"), Type.ArgClause(List(Type.Name("Encoding")))), Name.Anonymous(), Seq())/g' \
+        -e 's/Ctor.Primary.Nil,.Name.Anonymous..,.Nil./Ctor.Primary(Nil, Name.Anonymous(), Seq())/g' \
         -e 's/^/    /' >> "$x/tmp/$1.tmp"
     cat "$app2" | tail -n +`expr $n + 1` >> "$x/tmp/$1.tmp"
     cat "$x/tmp/$1.txt" | tail -n 1 |

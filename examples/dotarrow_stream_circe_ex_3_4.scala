@@ -47,7 +47,7 @@ object π:
 
   given Conversion[`()`, Option[String]] = _.as[Option[String]]
 
-  val bsh: String => String = _.replaceAll("([`\"\\\\$])", "\\\\$1")
+  val bsh: String => String = _.replaceAll("(['`\"\\\\$])", "\\\\$1")
 
   def cli(src: String)(args: String*) =
     s"""scala-cli compile "$src" &>/dev/null;                                            scala-cli run "$src" -q -O -nowarn -S 3.5.0-RC1 -- """ + args
@@ -67,7 +67,7 @@ object π:
     IO.pure(it.flatMap { src =>
       if 0 == s"""sh -c 'echo -n "${bsh(
             src
-          )}" >| "dotarrow/${tmp}_ex3.scala"'""".! && 0 == s"""sh -c '${cli(
+          )}" | sed -e "s/\\\\\\\\'/'/g"                                                                                    >| "dotarrow/${tmp}_ex3.scala"'""".! && 0 == s"""sh -c '${cli(
             "../dotarrow/source.scala"
           )(
             s"dotarrow/${tmp}_ex3.scala"
@@ -81,7 +81,7 @@ object π:
               .mkString("\n");
           if 0 == s"""sh -c 'echo -n "${bsh(
                 src
-              )}" >| "dotarrow/${tmp}_ex3.scala"'""".! && 0 == s"""sh -c '${cli(
+              )}" | sed -e "s/\\\\\\\\'/'/g"                                                                                    >| "dotarrow/${tmp}_ex3.scala"'""".! && 0 == s"""sh -c '${cli(
                 s"dotarrow/${tmp}_ex3.scala"
               )()} 3>&1 1>&2- 2>&3- | sed -e "s/[ ]/\\\\\\\\ /g"                                                                  >> "dotarrow/tmp/${tmp}_ex3.scala.txt"'""".! && 0 == s"""sh -c '${cli(
                 "../dotarrow/source.scala"
@@ -101,8 +101,8 @@ object π:
     _  <- (
       IO.unit,
       for {
-        _5e460c70_ed7d_47f8_b7ee_a205c2f4aadd <- IO {
-          def _5e460c70_ed7d_47f8_b7ee_a205c2f4aadd(code: `()`): IO[Unit] =
+        _002c3ef4_a403_4099_b0a5_6ea3b3488611 <- IO {
+          def _002c3ef4_a403_4099_b0a5_6ea3b3488611(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -115,13 +115,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run_ex3)
-                _    <- _5e460c70_ed7d_47f8_b7ee_a205c2f4aadd(code)
+                _    <- _002c3ef4_a403_4099_b0a5_6ea3b3488611(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _5e460c70_ed7d_47f8_b7ee_a205c2f4aadd
+          _002c3ef4_a403_4099_b0a5_6ea3b3488611
         }
         code                                  <- ch()(run_ex3)
-        _ <- _5e460c70_ed7d_47f8_b7ee_a205c2f4aadd(code)
+        _ <- _002c3ef4_a403_4099_b0a5_6ea3b3488611(code)
       } yield (),
       for {
         _ <- τ
@@ -143,7 +143,7 @@ object π:
     IO.pure(it.flatMap { src =>
       if 0 == s"""sh -c 'echo -n "${bsh(
             src
-          )}" >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
+          )}" | sed -e "s/\\\\\\\\'/'/g"                                                                              >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
             "../dotarrow/source.scala"
           )(
             s"dotarrow/$tmp.scala"
@@ -156,7 +156,7 @@ object π:
               .mkString("\n");
           if 0 == s"""sh -c 'echo -n "${bsh(
                 src
-              )}" >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
+              )}" | sed -e "s/\\\\\\\\'/'/g"                                                                              >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
                 s"dotarrow/$tmp.scala"
               )()} 3>&1 1>&2- 2>&3- | sed -e "s/[ ]/\\\\\\\\ /g"                                                            >> "dotarrow/tmp/$tmp.txt"'""".! && 0 == s"""sh -c '${cli(
                 "../dotarrow/source.scala"

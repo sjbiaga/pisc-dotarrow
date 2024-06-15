@@ -47,7 +47,7 @@ object π:
 
   given Conversion[`()`, Option[String]] = _.as[Option[String]]
 
-  val bsh: String => String = _.replaceAll("([`\"\\\\$])", "\\\\$1")
+  val bsh: String => String = _.replaceAll("(['`\"\\\\$])", "\\\\$1")
 
   def cli(src: String)(args: String*) =
     s"""scala-cli compile "$src" &>/dev/null;                                            scala-cli run "$src" -q -O -nowarn -S 3.5.0-RC1 -- """ + args
@@ -67,7 +67,7 @@ object π:
     IO.pure(it.flatMap { src =>
       if 0 == s"""sh -c 'echo -n "${bsh(
             src
-          )}" >| "dotarrow/${tmp}_ex1.scala"'""".! && 0 == s"""sh -c '${cli(
+          )}" | sed -e "s/\\\\\\\\'/'/g"                                                                                    >| "dotarrow/${tmp}_ex1.scala"'""".! && 0 == s"""sh -c '${cli(
             "../dotarrow/source.scala"
           )(
             s"dotarrow/${tmp}_ex1.scala"
@@ -81,7 +81,7 @@ object π:
               .mkString("\n");
           if 0 == s"""sh -c 'echo -n "${bsh(
                 src
-              )}" >| "dotarrow/${tmp}_ex1.scala"'""".! && 0 == s"""sh -c '${cli(
+              )}" | sed -e "s/\\\\\\\\'/'/g"                                                                                    >| "dotarrow/${tmp}_ex1.scala"'""".! && 0 == s"""sh -c '${cli(
                 s"dotarrow/${tmp}_ex1.scala"
               )()} 3>&1 1>&2- 2>&3- | sed -e "s/[ ]/\\\\\\\\ /g"                                                                  >> "dotarrow/tmp/${tmp}_ex1.scala.txt"'""".! && 0 == s"""sh -c '${cli(
                 "../dotarrow/source.scala"
@@ -101,8 +101,8 @@ object π:
     _  <- (
       IO.unit,
       for {
-        _799c5a28_3222_4359_8010_8f31adbd927c <- IO {
-          def _799c5a28_3222_4359_8010_8f31adbd927c(code: `()`): IO[Unit] =
+        _94081a80_4ffc_41b0_9da8_48746a451ff8 <- IO {
+          def _94081a80_4ffc_41b0_9da8_48746a451ff8(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -115,13 +115,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run)
-                _    <- _799c5a28_3222_4359_8010_8f31adbd927c(code)
+                _    <- _94081a80_4ffc_41b0_9da8_48746a451ff8(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _799c5a28_3222_4359_8010_8f31adbd927c
+          _94081a80_4ffc_41b0_9da8_48746a451ff8
         }
         code                                  <- ch()(run)
-        _ <- _799c5a28_3222_4359_8010_8f31adbd927c(code)
+        _ <- _94081a80_4ffc_41b0_9da8_48746a451ff8(code)
       } yield (),
       for {
         _ <- τ
