@@ -47,7 +47,7 @@ object π:
 
   given Conversion[`()`, Option[String]] = _.as[Option[String]]
 
-  val bsh: String => String = _.replaceAll("([`\"\\\\$])", "\\\\$1")
+  val bsh: String => String = _.replaceAll("(['`\"\\\\$])", "\\\\$1")
 
   def cli(src: String)(args: String*) =
     s"""scala-cli compile "$src" &>/dev/null;                                            scala-cli run "$src" -q -O -nowarn -S 3.5.0-RC1 -- """ + args
@@ -62,7 +62,7 @@ object π:
     IO.pure(it.flatMap { src =>
       if 0 == s"""sh -c 'echo -n "${bsh(
             src
-          )}" >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
+          )}" | sed -e "s/\\\\\\\\'/'/g"                                                                              >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
             "../dotarrow/source.scala"
           )(
             s"dotarrow/$tmp.scala"
@@ -75,7 +75,7 @@ object π:
               .mkString("\n");
           if 0 == s"""sh -c 'echo -n "${bsh(
                 src
-              )}" >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
+              )}" | sed -e "s/\\\\\\\\'/'/g"                                                                              >| "dotarrow/$tmp.scala"'""".! && 0 == s"""sh -c '${cli(
                 s"dotarrow/$tmp.scala"
               )()} 3>&1 1>&2- 2>&3- | sed -e "s/[ ]/\\\\\\\\ /g"                                                            >> "dotarrow/tmp/$tmp.txt"'""".! && 0 == s"""sh -c '${cli(
                 "../dotarrow/source.scala"
@@ -110,8 +110,8 @@ object π:
     _  <- (
       IO.unit,
       for {
-        _ebf60fc4_ab17_4e6b_8852_4b1649645406 <- IO {
-          def _ebf60fc4_ab17_4e6b_8852_4b1649645406(code: `()`): IO[Unit] =
+        _b263c4f2_c0ed_41c9_ac9d_98f2662edb74 <- IO {
+          def _b263c4f2_c0ed_41c9_ac9d_98f2662edb74(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -124,13 +124,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run)
-                _    <- _ebf60fc4_ab17_4e6b_8852_4b1649645406(code)
+                _    <- _b263c4f2_c0ed_41c9_ac9d_98f2662edb74(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _ebf60fc4_ab17_4e6b_8852_4b1649645406
+          _b263c4f2_c0ed_41c9_ac9d_98f2662edb74
         }
         code                                  <- ch()(run)
-        _ <- _ebf60fc4_ab17_4e6b_8852_4b1649645406(code)
+        _ <- _b263c4f2_c0ed_41c9_ac9d_98f2662edb74(code)
       } yield (),
       Init(s"""sh -c 'cat "dotarrow/${args(0)}.scala"'""".!!, ch)
     ).parMapN { (_, _, _) => }

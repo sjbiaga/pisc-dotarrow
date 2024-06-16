@@ -260,11 +260,13 @@ There are currently two implementation of codecs:
   operator is used to concatenate lists, e.g.,
 
     ./examples $ pi dotarrow_list_aeson_ex0.scala -- ex3
+
     ./examples $ pi dotarrow_list_circe_ex0.scala -- ex11
 
 - an expression `DSL` that mirrors the native numeric expressions, e.g.,
 
     ./examples $ pi dotarrow_idem_aeson_ex0.scala -- ex4
+
     ./examples $ pi dotarrow_idem_circe_ex0.scala -- ex12
 
 In the latter `DSL` case, for example, the integers - either variables

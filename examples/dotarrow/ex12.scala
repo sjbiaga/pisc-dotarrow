@@ -1,6 +1,6 @@
 package dotarrow
 package codec.idem
-package ex1
+package ex12
 
 import cats.effect.{ IO, IOApp }
 import App.NumericEncoding.{ mkNumericOps, fromInt }

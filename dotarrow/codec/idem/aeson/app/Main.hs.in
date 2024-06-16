@@ -33,10 +33,12 @@ val v@(ValD m@(VarP (Name (OccName "main") _))
 val _ _ = Nothing
 
 expr' :: Exp -> Exp
-expr' (ParensE it) = expr' it
+expr' (ParensE it) = (ParensE (expr' it))
 expr' it@(ListE []) = it
 expr' it@(LitE (IntegerL _)) = AppE (VarE (Name (OccName "fromInt") NameS)) it
 expr' it@(VarE (Name (OccName _) _)) = AppE (VarE (Name (OccName "fromInt") NameS)) it
+expr' it@(AppE (VarE (Name (OccName "negate") _)) (LitE (IntegerL _)))
+    = AppE (VarE (Name (OccName "fromInt") NameS)) it
 expr' (AppE (VarE (Name n@(OccName "negate") _)) it)
     = AppE (VarE (Name n NameS)) (expr' it)
 expr' (UInfixE lhs op rhs) = UInfixE (expr' lhs) op (expr' rhs)

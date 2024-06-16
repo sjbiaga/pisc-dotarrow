@@ -4,7 +4,7 @@
 
 @given Conversion[`()`, Option[String]] = _.as[Option[String]]
 
-@val bsh: String => String = _.replaceAll("([`\"\\\\$])", "\\\\$1")
+@val bsh: String => String = _.replaceAll("(['`\"\\\\$])", "\\\\$1")
 
 @def cli(src: String)(args: String*) = s"""scala-cli compile "$src" &>/dev/null; \
                                            scala-cli run "$src" -q -O -nowarn -S 3.5.0-RC1 -- """ + args.mkString(" ")
@@ -14,7 +14,8 @@
 @var ex: Option[String] = None
 
 @val run: Option[String] => IO[Option[String]] = { it => IO.pure(it.flatMap { src =>                     \
-  if 0 == s"""sh -c 'echo -n "${bsh(src)}" >| "dotarrow/$tmp.scala"'""" .!                               \
+  if 0 == s"""sh -c 'echo -n "${bsh(src)}" | sed -e "s/\\\\\\\\'/'/g"                                    \
+                                          >| "dotarrow/$tmp.scala"'""" .!                                \
   && 0 == s"""sh -c '${cli("../dotarrow/source.scala")(s"dotarrow/$tmp.scala")}'""" .!                   \
   && 0 == s"""sh -c 'dotarrowCirce "$tmp" codec/idem'""" .!                                              \
   then {                                                                                                 \
@@ -25,7 +26,8 @@
                 "//> using dep io.circe::circe-generic:0.15.0-M1\n" +                                    \
                 "//> using dep io.circe::circe-parser:0.15.0-M1\n" +                                     \
                 out.mkString("\n")                                                                      ;\
-      if 0 == s"""sh -c 'echo -n "${bsh(src)}" >| "dotarrow/$tmp.scala"'""" .!                           \
+      if 0 == s"""sh -c 'echo -n "${bsh(src)}" | sed -e "s/\\\\\\\\'/'/g"                                \
+                                              >| "dotarrow/$tmp.scala"'""" .!                            \
       && 0 == s"""sh -c '${cli(s"dotarrow/$tmp.scala")()} 3>&1 1>&2- 2>&3- | sed -e "s/[ ]/\\\\\\\\ /g"  \
                                                           >> "dotarrow/tmp/$tmp.txt"'""" .!              \
       && 0 == s"""sh -c '${cli("../dotarrow/source.scala")(s"dotarrow/$tmp.scala")}'""" .!               \

@@ -71,19 +71,6 @@ function dotarrowCountPreLast() {
     fi
 }
 
-function dotarrowCount() {
-    expr $(cat "$1" | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
-}
-
-function dotarrowCountPreLast() {
-    if [ `cat "$1" | tail -n 2 | wc -l` -eq 2 ]
-    then
-        expr $(cat "$1" | tail -n 2 | head -n 1 | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
-    else
-        echo 0
-    fi
-}
-
 function dotarrowCountLast() {
     expr $(cat "$1" | tail -n 1 | tr '\\' ' ' | awk '{ print $1 }' | sed -e 's/$/ + /' | tr -d '\n'; echo 0)
 }

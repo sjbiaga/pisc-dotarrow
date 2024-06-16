@@ -1,6 +1,6 @@
 cabal-version:      2.4
 
-name:               ex4
+name:               ex5
 
 version:            0.1.0.0
 
@@ -8,10 +8,11 @@ license:            MIT
 
 license-file:       LICENSE
 
-executable ex4
+executable ex5
     main-is:        Main.hs
 
     other-modules:
+        Fun,
         Inp_gUgVwYdD8r,
         Out_gUgVwYdD8r
 
