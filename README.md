@@ -259,17 +259,48 @@ There are currently two implementation of codecs:
 - lists of integers that can be added, negated or subtracted; the multiplication
   operator is used to concatenate lists, e.g.,
 
-    ./examples $ pi dotarrow_list_aeson_ex0.scala -- ex3
-
-    ./examples $ pi dotarrow_list_circe_ex0.scala -- ex11
+        ./examples $ pi dotarrow_codec_list_aeson_ex0.scala -- ex3
+        ./examples $ pi dotarrow_codec_list_circe_ex0.scala -- ex11
 
 - an expression `DSL` that mirrors the native numeric expressions, e.g.,
 
-    ./examples $ pi dotarrow_idem_aeson_ex0.scala -- ex4
-
-    ./examples $ pi dotarrow_idem_circe_ex0.scala -- ex12
+        ./examples $ pi dotarrow_codec_idem_aeson_ex0.scala -- ex4
+        ./examples $ pi dotarrow_codec_idem_circe_ex0.scala -- ex12
 
 In the latter `DSL` case, for example, the integers - either variables
 of type `Int` that have been previously bound, or literals - are wrapped
 within `fromInt` in an "invisible" step before the main program is run,
 and the numeric operations are actually performed with `DSL` values.
+
+Examples
+--------
+
+Because the number of examples is growing rapidly, this is the list of the
+commands with which they were tested as arguments:
+
+- `Scala`
+
+        ./examples $ pi dotarrow_circe_ex0.scala -- ex1
+        ./examples $ pi dotarrow_circe_ex0.scala -- ex2
+        ./examples $ pi dotarrow_stream_ex0.scala -- ex3
+        ./examples $ pi dotarrow_circe_ex0.scala -- ex4
+        ./examples $ pi dotarrow_codec_list_circe_ex0.scala -- ex11
+        ./examples $ pi dotarrow_codec_idem_circe_ex0.scala -- ex12
+        ./examples $ pi dotarrow_codec_idem_circe_ex0.scala -- ex13
+
+- `Haskell`
+
+        ./examples $ pi dotarrow_aeson_ex0.scala -- ex1
+        ./examples $ pi dotarrow_aeson_ex0.scala -- ex2
+        ./examples $ pi dotarrow_codec_list_aeson_ex0.scala -- ex3
+        ./examples $ pi dotarrow_codec_idem_aeson_ex0.scala -- ex4
+        ./examples $ pi dotarrow_codec_idem_aeson_ex0.scala -- ex5
+
+- `Scala` & `Haskell`
+
+        ./examples $ pi dotarrow_circe_aeson_ex0.scala -- ex5
+        ./examples $ pi dotarrow_circe_aeson_ex0.scala -- ex6
+        ./examples $ pi dotarrow_circe_aeson_ex0.scala -- ex7
+        ./examples $ pi dotarrow_circe_aeson_ex0.scala -- ex8
+        ./examples $ pi dotarrow_circe_aeson_ex0.scala -- ex9
+        ./examples $ pi dotarrow_circe_aeson_ex0.scala -- ex10

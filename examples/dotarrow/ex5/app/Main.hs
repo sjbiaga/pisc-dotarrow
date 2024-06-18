@@ -158,10 +158,6 @@ main = do
     let C a b c = toC x
     y <- pure $ (-1) * (a - 55) * c + (-2) * b - (-4) * (a - 50) * b * 1 : (-4) * b * c * (1 * 1) : []
     let D d e = toD y
-    -- x <- pure $ (fromInt (-1)) * (fromInt 1) * (fromInt 2) + (fromInt (-2)) * (fromInt 5) + (fromInt (-3)) * (fromInt 4) - (fromInt (-3)) * (fromInt 2) + (fromInt (-4)) * (fromInt 2) * (fromInt 3) * (fromInt 1) : (fromInt 0) - (fromInt 1) + (fromInt 9) : (fromInt (-3)) * (fromInt 3) : []
-    -- let C a b c = toC' x
-    -- y <- pure $ (fromInt (-1)) * (fromInt (a - 55)) * (fromInt c) + (fromInt (-2)) * (fromInt b) - (fromInt (-4)) * (fromInt (a - 50)) * (fromInt b) * (fromInt 1) : (fromInt (-4)) * (fromInt b) * (fromInt c) * (fromInt (1) * (fromInt 1)) : []
-    -- let D d e = toD' y
     z :: Int <- pure (a + b + d - c * e)
     _u :: () <- print z
     return ()
