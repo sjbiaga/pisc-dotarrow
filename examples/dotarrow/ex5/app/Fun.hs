@@ -30,12 +30,12 @@ get' (FlatMap (FlatMap s p) q) = Left (FlatMap s (p >=> q))
 instance Functor Trampoline where
     fmap f s = s >>= pure . f
 instance Applicative Trampoline where
-    pure                   = Done
-    Done f <*> Done v      = Done (f v)
-    it@(Done _) <*> Call c = it <*> c ()
-    Done f <*> FlatMap s q = FlatMap s (fmap f . q)
-    Call f <*> it          = f () <*> it
-    FlatMap s q <*> it     = FlatMap s ((<*> it) . q)
+    pure                        = Done
+    Done f <*> Done v           = Done (f v)
+    it@(Done _) <*> Call c      = ((it <*>) . c) ()
+    it@(Done _) <*> FlatMap s q = FlatMap s ((it <*>) . q)
+    Call f <*> it               = ((<*> it) . f) ()
+    FlatMap s q <*> it          = FlatMap s ((<*> it) . q)
 instance Monad Trampoline where
     it >>= f = FlatMap it f
 
