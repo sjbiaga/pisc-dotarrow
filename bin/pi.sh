@@ -184,7 +184,7 @@ function dotarrowHaskellToScala() {
     sed -e 's/Init.Type.Select.Term.Name."IOApp".,.Type.Name."Simple"..,.Name.Anonymous.., Nil./Init(Type.Select(Term.Name("IOApp"), Type.Name("Simple")), Name.Anonymous(), Seq())/' \
         -e 's/Init.Type.Name.\(["][^"]\+["]\).,.Name.Anonymous..,.Nil./Init(Type.Name(\1), Name.Anonymous(), Seq())/g' \
         -i "$r.scala.src"
-    amm -c 'import $ivy.`org.scalameta:scalameta_2.13:4.9.6`;
+    amm -c 'import $ivy.`org.scalameta:scalameta_2.13:4.9.7`;
             import scala.meta._; import dialects.Scala3;
             print('"`cat \"$r.scala.src\"`"')' 2>/dev/null >| "$x/$2.scala"
     sed -i "$q.json" -e '/dummy_gUgVwYdD8r/d'

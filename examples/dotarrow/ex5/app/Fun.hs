@@ -1,4 +1,5 @@
-module Fun ( get, get'
+module Fun ( Trampoline (..)
+           , get, get'
            , ack, ack'
            , fib, fib'
            , fac, fac'

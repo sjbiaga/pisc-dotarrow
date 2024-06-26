@@ -99,10 +99,9 @@ object π:
   def Node1(): IO[Unit] = for {
     ch <- ν
     _  <- (
-      IO.unit,
       for {
-        _4864a305_3af9_468a_9c2d_fe4e1ac5cc1a <- IO {
-          def _4864a305_3af9_468a_9c2d_fe4e1ac5cc1a(code: `()`): IO[Unit] =
+        _206b0ba5_6ce3_4a8b_8613_8ff24e333f08 <- IO {
+          def _206b0ba5_6ce3_4a8b_8613_8ff24e333f08(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -115,13 +114,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run_ex1)
-                _    <- _4864a305_3af9_468a_9c2d_fe4e1ac5cc1a(code)
+                _    <- _206b0ba5_6ce3_4a8b_8613_8ff24e333f08(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _4864a305_3af9_468a_9c2d_fe4e1ac5cc1a
+          _206b0ba5_6ce3_4a8b_8613_8ff24e333f08
         }
         code                                  <- ch()(run_ex1)
-        _ <- _4864a305_3af9_468a_9c2d_fe4e1ac5cc1a(code)
+        _ <- _206b0ba5_6ce3_4a8b_8613_8ff24e333f08(code)
       } yield (),
       for {
         _ <- τ
@@ -130,7 +129,7 @@ object π:
         }
         _ <- ch(ex1)
       } yield ()
-    ).parMapN { (_, _, _) => }
+    ).parMapN { (_, _) => }
   } yield ()
 
   val _ =

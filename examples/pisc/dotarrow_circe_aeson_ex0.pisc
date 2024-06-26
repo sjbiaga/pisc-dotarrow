@@ -93,15 +93,14 @@ Start(src, s2, ch) = τ /* println(src) */.                              \
                      then τ /* println(code.get) */. s2</*code.get*/>.  \
                      else ch<ch>.
 
-Main = τ /* s"""sh -c 'echo -n "{}" >| "$cwd".json'""" .! */.                           \
-       τ /* s"""sh -c 'echo -n >| "$cwd".txt'""" .! */.                                 \
-       τ /* s"""sh -c 'cp -r ../dotarrow/sc2hs/prj "$cwd"'""" .! */.                    \
+Main = τ /* s"""sh -c 'echo -n "{}" >| "$cwd".json'""" .! */.         \
+       τ /* s"""sh -c 'echo -n >| "$cwd".txt'""" .! */.               \
+       τ /* s"""sh -c 'cp -r ../dotarrow/sc2hs/prj "$cwd"'""" .! */.  \
        ν(sc)                                                                            \
        ν(hs)                                                                            \
        ν(s2)                                                                            \
        ν(h2)                                                                            \
-       ν(ch) ( 𝟎                                                                        \
-             | Start(/* s"""sh -c 'cat "dotarrow/${args(0)}.scala"'""" .!! */, s2, ch)  \
+       ν(ch) ( Start(/* s"""sh -c 'cat "dotarrow/${args(0)}.scala"'""" .!! */, s2, ch)  \
              | Circe(sc, s2, ch) | Sc2Hs(s2, hs)                                        \
              | Aeson(hs, h2, ch) | Hs2Sc(h2, sc)                                        \
              | ch(ch). sc<>. hs<>. s2<>. h2<>.                                          \

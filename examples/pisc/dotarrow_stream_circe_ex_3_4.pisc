@@ -50,16 +50,15 @@
     None                                                                                                       \
 })}
 
-Node1 = ν(ch) ( 𝟎                                                   \
-              | ( 𝟎                                                 \
-                | !.ch(code)/* run_ex3 */.                          \
-                    if /* 'code.nonEmpty */ = True                  \
-                    then τ /* println(s"Node1:\n${'code.get}") */.  \
-                         ch<code>.                                  \
-                    else ch<>.                                      \
-                )                                                   \
-              | τ /* println(s"Node1:\n${ex3.get}") */.             \
-                ch</*ex3*/>.                                        \
+Node1 = ν(ch) (                                                   \
+              ( !.ch(code)/* run_ex3 */.                          \
+                  if /* 'code.nonEmpty */ = True                  \
+                  then τ /* println(s"Node1:\n${'code.get}") */.  \
+                       ch<code>.                                  \
+                  else ch<>.                                      \
+              )                                                   \
+              | τ /* println(s"Node1:\n${ex3.get}") */.           \
+                ch</*ex3*/>.                                      \
               )
 
 #############
@@ -100,15 +99,14 @@ Node1 = ν(ch) ( 𝟎                                                   \
     None                                                                                                 \
 })}
 
-Node2 = ν(ch)ν(lnk) ( 𝟎 | Node3(ch) | Node4(ch, lnk) )
+Node2 = ν(ch)ν(lnk) ( Node3(ch) | Node4(ch, lnk) )
 
 Node3(ch) = τ /* println(s"Node3:\n${ex4.get}") */. ch</*ex4*/>.
 
 Node4(ch, lnk) = ch(code)/* run_ex4 */.                     \
                  [/* 'code.nonEmpty */ = True]              \
                  τ /* println(s"Node4:\n${'code.get}") */.  \
-                 ( 𝟎                                        \
-                 | lnk<ch>. ch<code>.                       \
+                 ( lnk<ch>. ch<code>.                       \
                  | Node5(lnk)                               \
                  )
 
@@ -116,8 +114,7 @@ Node5(lnk) = lnk(ch).                                   \
              ch(code)/* run_ex4 */.                     \
              [/* 'code.nonEmpty */ = True]              \
              τ /* println(s"Node5:\n${'code.get}") */.  \
-             ν(ch2)ν(lnk2) ( 𝟎                          \
-                           | ch2<code>.                 \
+             ν(ch2)ν(lnk2) ( ch2<code>.                 \
                            | Node4(ch2, lnk2)           \
                            )
 

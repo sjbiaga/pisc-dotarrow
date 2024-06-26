@@ -26,7 +26,7 @@
  * from Sebastian I. Gliţa-Catina.]
  */
 
-//> using dep org.scalameta:scalameta_2.13:4.9.6
+//> using dep org.scalameta:scalameta_2.13:4.9.7
 
 package dotarrow
 

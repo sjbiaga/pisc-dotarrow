@@ -46,12 +46,11 @@
 Main = τ /* ex = Some(s"""sh -c 'cat "dotarrow/${args(0)}.scala"'""" .!!)      */.                  \
        τ /* s"""sh -c 'cp ../dotarrow/stream/bin.in dotarrow/tmp/"${tmp}_ex0.scala.bin"'""" .! */.  \
        τ /* s"""sh -c 'touch dotarrow/tmp/"${tmp}_ex0.scala.txt"'""" .!        */.                  \
-       ν(ch) ( 𝟎                                               \
-             | ( 𝟎                                             \
-               | !.ch(code)/* run */.                          \
-                   if /* 'code.nonEmpty */ = True              \
-                   then τ /* println('code.get) */. ch<code>.  \
-                   else ch<>.                                  \
-               )                                               \
-             | τ /* println(ex.get) */. ch</*ex*/>.            \
+       ν(ch) (                                               \
+             ( !.ch(code)/* run */.                          \
+                 if /* 'code.nonEmpty */ = True              \
+                 then τ /* println('code.get) */. ch<code>.  \
+                 else ch<>.                                  \
+             )                                               \
+             | τ /* println(ex.get) */. ch</*ex*/>.          \
              )

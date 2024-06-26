@@ -46,15 +46,14 @@
     None                                                                                                       \
 })}
 
-Main = ν(ch)ν(lnk) ( 𝟎 | Node1(ch) | Node2(ch, lnk) )
+Main = ν(ch)ν(lnk) ( Node1(ch) | Node2(ch, lnk) )
 
 Node1(ch) = τ /* println(s"Node1:\n${ex2.get}") */. ch</*ex2*/>.
 
 Node2(ch, lnk) = ch(code)/* run */.                         \
                  [/* 'code.nonEmpty */ = True]              \
                  τ /* println(s"Node2:\n${'code.get}") */.  \
-                 ( 𝟎                                        \
-                 | lnk<ch>. ch<code>.                       \
+                 ( lnk<ch>. ch<code>.                       \
                  | Node3(lnk)                               \
                  )
 
@@ -62,7 +61,6 @@ Node3(lnk) = lnk(ch).                                   \
              ch(code)/* run */.                         \
              [/* 'code.nonEmpty */ = True]              \
              τ /* println(s"Node3:\n${'code.get}") */.  \
-             ν(ch2)ν(lnk2) ( 𝟎                          \
-                           | ch2<code>.                 \
+             ν(ch2)ν(lnk2) ( ch2<code>.                 \
                            | Node2(ch2, lnk2)           \
                            )

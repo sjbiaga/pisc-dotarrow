@@ -90,10 +90,9 @@ object π:
     }
     ch <- ν
     _  <- (
-      IO.unit,
       for {
-        _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4 <- IO {
-          def _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4(code: `()`): IO[Unit] =
+        _970dde58_d003_49cd_999a_819380838dc2 <- IO {
+          def _970dde58_d003_49cd_999a_819380838dc2(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -106,14 +105,14 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run)
-                _    <- _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4(code)
+                _    <- _970dde58_d003_49cd_999a_819380838dc2(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4
+          _970dde58_d003_49cd_999a_819380838dc2
         }
         code                                  <- ch()(run)
-        _ <- _4145c6e9_d67c_4e0b_ae1e_cb106a0fa0a4(code)
+        _ <- _970dde58_d003_49cd_999a_819380838dc2(code)
       } yield (),
       Init(s"""sh -c 'cat "$cwd"/app/Main.hs'""".!!, ch)
-    ).parMapN { (_, _, _) => }
+    ).parMapN { (_, _) => }
   } yield ()

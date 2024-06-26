@@ -44,14 +44,13 @@
 
 Init(src, ch) = τ /* println(src) */. ch</* Some(src.as[String]) */>.
 
-Main = τ /* s"""sh -c 'echo "{}" >| dotarrow/tmp/"$tmp.json"'""" .! */.            \
-       τ /* s"""sh -c 'touch dotarrow/tmp/"$tmp.txt"'""" .! */.                    \
-       ν(ch) ( 𝟎                                                                   \
-             | ( 𝟎                                                                 \
-               | !.ch(code)/* run */.                                              \
+Main = τ /* s"""sh -c 'echo "{}" >| dotarrow/tmp/"$tmp.json"'""" .! */.  \
+       τ /* s"""sh -c 'touch dotarrow/tmp/"$tmp.txt"'""" .! */.          \
+       ν(ch) (                                                                     \
+             ( !.ch(code)/* run */.                                                \
                    if /* 'code.nonEmpty */ = True                                  \
                    then τ /* println('code.get) */. ch<code>.                      \
                    else ch<>.                                                      \
-               )                                                                   \
+             )                                                                     \
              | Init(/* s"""sh -c 'cat "dotarrow/${args(0)}.scala"'""" .!! */, ch)  \
              )

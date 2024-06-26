@@ -99,10 +99,9 @@ object π:
   def Main(args: String*): IO[Unit] = for {
     ch <- ν
     _  <- (
-      IO.unit,
       for {
-        _94081a80_4ffc_41b0_9da8_48746a451ff8 <- IO {
-          def _94081a80_4ffc_41b0_9da8_48746a451ff8(code: `()`): IO[Unit] =
+        _8a10d3bb_1198_438a_81ff_10a3b2d6f056 <- IO {
+          def _8a10d3bb_1198_438a_81ff_10a3b2d6f056(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -115,13 +114,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run)
-                _    <- _94081a80_4ffc_41b0_9da8_48746a451ff8(code)
+                _    <- _8a10d3bb_1198_438a_81ff_10a3b2d6f056(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _94081a80_4ffc_41b0_9da8_48746a451ff8
+          _8a10d3bb_1198_438a_81ff_10a3b2d6f056
         }
         code                                  <- ch()(run)
-        _ <- _94081a80_4ffc_41b0_9da8_48746a451ff8(code)
+        _ <- _8a10d3bb_1198_438a_81ff_10a3b2d6f056(code)
       } yield (),
       for {
         _ <- τ
@@ -130,5 +129,5 @@ object π:
         }
         _ <- ch(ex1)
       } yield ()
-    ).parMapN { (_, _, _) => }
+    ).parMapN { (_, _) => }
   } yield ()
