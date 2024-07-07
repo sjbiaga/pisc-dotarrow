@@ -76,7 +76,7 @@ gn1 = runQ [| (\(name :: String
                 EGenerator (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name)))
                                                          (T'Ref (RT'Name (SmNameT' "Unit")))))
                                          (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                                           (SmArgClauseT [TTerm (SmBlockT [exp'])] Nothing))))
+                                                           (SmArgClauseT [TBlock (SmBlockT [exp'])] Nothing))))
               ) |]
 
 gn2 :: Quasi q => q Exp
@@ -86,9 +86,9 @@ gn2 = runQ [| (\(name :: String
                 ) ->
                 EGenerator (SmGeneratorE (PVar (SmVarP (SmNameT name)))
                                          (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                                           (SmArgClauseT [TTerm (SmBlockT [STerm (TApply (SmApplyT (TRef (RTName (SmNameT name')))
+                                                           (SmArgClauseT [TBlock (SmBlockT [STerm (TApply (SmApplyT (TRef (RTName (SmNameT name')))
                                                                                                                    (SmArgClauseT it' Nothing)))
-                                                                                          ])] Nothing))))
+                                                                                           ])] Nothing))))
               ) |]
 
 gn3 :: Quasi q => q Exp
@@ -109,12 +109,12 @@ gn4 = runQ [| (\(name :: String
                 EGenerator (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name)))
                                                          (T'Ref (RT'Name (SmNameT' type')))))
                                          (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                                           (SmArgClauseT [TTerm (SmBlockT [exp'])] Nothing))))
+                                                           (SmArgClauseT [TBlock (SmBlockT [exp'])] Nothing))))
               ) |]
 
 gn5 :: Quasi q => q Exp
 gn5 = runQ [| EGenerator (SmGeneratorE (PPat SmWildcardP)
                                        (TRef (RTSelect (SmSelectRT (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                                                                       (SmArgClauseT [TTerm (SmBlockT [])] Nothing)))
+                                                                                       (SmArgClauseT [TBlock (SmBlockT [])] Nothing)))
                                                                    (SmNameT "void")))))
            |]

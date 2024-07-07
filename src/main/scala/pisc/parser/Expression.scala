@@ -29,7 +29,7 @@
 package pisc
 package parser
 
-import scala.collection.Set
+import scala.collection.mutable.{ LinkedHashSet => Set }
 
 import scala.util.parsing.combinator._
 
@@ -136,22 +136,22 @@ object Expression:
 
     def apply(self: sm.Enumerator): (sm.Enumerator, Names) = self match
 
-      case it @ sm.Enumerator.Generator(pat, rhs) => 
+      case it @ sm.Enumerator.Generator(pat, rhs) =>
         val (p, pns) = Pat(pat)
         val (r, rns) = Term(rhs)
         it.copy(pat = p, rhs = r) -> (pns ++ rns)
 
-      case it @ sm.Enumerator.CaseGenerator(pat, rhs) => 
+      case it @ sm.Enumerator.CaseGenerator(pat, rhs) =>
         val (p, pns) = Pat(pat)
         val (r, rns) = Term(rhs)
         it.copy(pat = p, rhs = r) -> (pns ++ rns)
 
-      case it @ sm.Enumerator.Val(pat, rhs) => 
+      case it @ sm.Enumerator.Val(pat, rhs) =>
         val (p, pns) = Pat(pat)
         val (r, rns) = Term(rhs)
         it.copy(pat = p, rhs = r) -> (pns ++ rns)
 
-      case it @ sm.Enumerator.Guard(cond) => 
+      case it @ sm.Enumerator.Guard(cond) =>
         val (c, cns) = Term(cond)
         it.copy(cond = c) -> cns
 

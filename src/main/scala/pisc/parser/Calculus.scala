@@ -31,7 +31,7 @@ package parser
 
 import scala.util.parsing.combinator._
 
-import Pi.{ Names, PrefixChannelParsingException }
+import Pi.{ Names, PrefixParsingException }
 import Calculus._
 
 import scala.meta.{ Enumerator, Term }
@@ -44,7 +44,7 @@ class Calculus extends Pi:
       case (bind, bound) ~ _ ~ (sum, free)
         if (free &~ bound).nonEmpty =>
         throw EquationFreeNamesException(bind.identifier.asSymbol.name, free &~ bound)
-      case (`()`(λ(Symbol("Main")), _, params*), _) ~ _ ~ _ if params.nonEmpty =>
+      case (`(*)`(λ(Symbol("Main")), _, params*), _) ~ _ ~ _ if params.nonEmpty =>
         throw MainParsingException(params.map(_.asSymbol.name)*)
       case (bind, _) ~ _ ~ (sum, _) =>
         bind -> flatten(sum)
@@ -62,7 +62,7 @@ class Calculus extends Pi:
 
   def sequential: Parser[(`.`, Names)] =
     prefixes ~ opt( leaf | "("~>choice<~")" ) ^^ {
-      case (pre, _) ~ None if pre.isEmpty =>
+      case (Nil, _) ~ None =>
         throw EmptyParsingException
       case pre ~ Some((end: `&`, free: Names)) =>
         `.`(end, pre._1*) -> (pre._2._2 ++ (free &~ pre._2._1))
@@ -87,7 +87,7 @@ class Calculus extends Pi:
     "!"~> opt( "."~> `μ.` <~"." ) ~ choice ^^ { // [guarded] replication
       case Some(μ) ~ (sum, free) =>
         `!`(Some(μ._1), sum) -> ((free &~ μ._2._1) ++ μ._2._2)
-      case None ~ (sum, free) =>
+      case _ ~ (sum, free) =>
         `!`(None, sum) -> free
     }
 
@@ -110,11 +110,11 @@ class Calculus extends Pi:
     }
 
   def prefix: Parser[(Pre, (Names, Names))] = `μ.`<~"." |
-    "ν"~>"("~>name<~")" ^^ { // restriction i.e. new name
-      case (ch, _) if !ch.isSymbol =>
-        throw PrefixChannelParsingException(ch)
-      case (ch, name) =>
-        ν(ch) -> (name, Names())
+    "ν"~>"("~>rep1sep(name, ",")<~")" ^^ { // restriction
+      case ns if !ns.forall(_._1.isSymbol) =>
+        throw PrefixChannelsParsingException(ns.filterNot(_._1.isSymbol).map(_._1)*)
+      case ns =>
+        ν(ns.map(_._1.asSymbol.name)*) -> (ns.map(_._2).reduce(_ ++ _), Names())
     }
 
   def test: Parser[(((λ, λ), Boolean), Names)] = "("~>test<~")" |
@@ -123,16 +123,16 @@ class Calculus extends Pi:
         (lhs -> rhs -> (mismatch != "=")) -> (free_lhs ++ free_rhs)
     }
 
-  def agent(binding: Boolean = false): Parser[(`()`, Names)] =
+  def agent(binding: Boolean = false): Parser[(`(*)`, Names)] =
     qual ~ IDENT ~ opt( "("~>repsep(name, ",")<~")" ) ^^ {
       case qual ~ id ~ _ if binding && qual.nonEmpty =>
         throw EquationQualifiedException(id, qual)
       case _ ~ id ~ Some(params) if binding && !params.forall(_._1.isSymbol) =>
         throw EquationParamsException(id, params.filterNot(_._1.isSymbol).map(_._1.value)*)
       case qual ~ id ~ Some(params) =>
-        `()`(λ(Symbol(id)), qual, params.map(_._1)*) -> params.map(_._2).foldLeft(Set.empty)(_ ++ _)
+        `(*)`(λ(Symbol(id)), qual, params.map(_._1)*) -> params.map(_._2).foldLeft(Set.empty)(_ ++ _)
       case qual ~ id ~ _ =>
-        `()`(λ(Symbol(id)), qual) -> Names()
+        `(*)`(λ(Symbol(id)), qual) -> Names()
     }
 
   /**
@@ -154,7 +154,7 @@ class Calculus extends Pi:
 
 object Calculus:
 
-  type Bind = (`()`, `+`)
+  type Bind = (`(*)`, `+`)
 
   sealed trait AST extends Any
 
@@ -176,7 +176,7 @@ object Calculus:
 
   sealed trait Pre extends Any with AST
 
-  case class ν(name: λ) extends AnyVal with Pre // forcibly
+  case class ν(names: String*) extends AnyVal with Pre // forcibly
 
   case class τ(code: Option[Either[List[Enumerator], Term]]) extends AnyVal with Pre
 
@@ -187,9 +187,9 @@ object Calculus:
 
   case class `?:`(cond: ((λ, λ), Boolean), t: `+`, f: `+`) extends AST
 
-  case class `()`(identifier: λ,
-                  qual: List[String],
-                  params: λ*) extends AST
+  case class `(*)`(identifier: λ,
+                   qual: List[String],
+                   params: λ*) extends AST
 
   case class `!`(guard: Option[μ], sum: `+`) extends AST
 
@@ -226,6 +226,9 @@ object Calculus:
 
   case class EquationFreeNamesException(id: String, free: Names)
       extends EquationParsingException(s"The free names (${free.map(_.name).mkString(", ")}) in the right hand side are not formal parameters of the left hand side of $id")
+
+  case class PrefixChannelsParsingException(names: λ*)
+      extends PrefixParsingException(s"${names.map(_.value).mkString(", ")} are not channel names but ${names.map(_.kind).mkString(", ")}")
 
   case object EmptyParsingException
       extends ParsingException("Instead of an empty expression there must be at least 𝟎 in place")

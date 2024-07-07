@@ -28,9 +28,9 @@
 
 package object Π:
 
-  import _root_.cats.effect.{ Deferred, Ref, IO }
-  import _root_.cats.effect.kernel.Outcome.Succeeded
-  import _root_.cats.effect.std.Supervisor
+  import cats.effect.{ Deferred, Ref, IO }
+  import cats.effect.kernel.Outcome.Succeeded
+  import cats.effect.std.Supervisor
 
   import `Π-magic`._
 
@@ -56,7 +56,7 @@ package object Π:
     def map(f: `()` => Unit): IO[Unit] = flatMap(f andThen IO.pure)
     def flatMap(f: `()` => IO[Unit]): IO[Unit] =
       ( for
-          ref <- Ref.of[IO, `><`](`><`())
+          ref <- Ref.of[IO, ><](><())
         yield
           f(`()`(ref))
       ).flatten
@@ -71,9 +71,9 @@ package object Π:
   /**
     * prefix
     */
-  final implicit class `()`(private val name: Any):
+  implicit final class `()`(private val name: Any) extends AnyVal:
 
-    private def ref = name.asInstanceOf[Ref[IO, `><`]]
+    private def ref = name.asInstanceOf[>*<]
 
     def ====(that: `()`) =
       try
@@ -88,27 +88,27 @@ package object Π:
     /**
       * negative prefix i.e. output
       */
-    def apply(value: `()`): IO[Option[Unit]] = `><`(value.name)(ref)
+    def apply(value: `()`): IO[Option[Unit]] = ><(value.name)(ref)
 
     /**
       * negative prefix i.e. output
       */
-    def apply(value: `()`)(code: => IO[Any]): IO[Option[Unit]] = `><`(value.name)(ref)(code)
+    def apply(value: `()`)(code: => IO[Any]): IO[Option[Unit]] = ><(value.name)(ref)(code)
 
     /**
       * positive prefix i.e. input
       */
-    def apply(): IO[`()`] = `><`()(ref).map(`()`)
+    def apply(): IO[`()`] = ><()(ref).map(`()`)
 
     /**
       * positive prefix i.e. input
       */
-    def apply[T]()(code: T => IO[T]): IO[`()`] = `><`()(ref)(code).map(`()`)
+    def apply[T]()(code: T => IO[T]): IO[`()`] = ><()(ref)(code).map(`()`)
 
     override def toString: String = if name == null then "null" else name.toString
 
 
-  object `Π-magic`:
+  private object `Π-magic`:
 
     /**
       * Adapted from cats-effect tutorial [[https://typelevel.org/cats-effect/docs/tutorial]].
@@ -132,22 +132,24 @@ package object Π:
      * limitations under the License.
      */
 
-    final case class `><`(takers: List[Deferred[IO, Any]],
-                          offerers: List[(Any, Deferred[IO, Option[Unit]])])
+    final case class ><(takers: List[Deferred[IO, Any]],
+                        offerers: List[(Any, Deferred[IO, Option[Unit]])])
 
-    object `><`:
+    type >*< = Ref[IO, ><]
 
-      inline def apply(): `><` = `><`(Nil, Nil)
+    object >< :
+
+      inline def apply(): >< = ><(Nil, Nil)
 
       import scala.util.Random
 
-      val random = Random()
+      private val random = Random()
 
-      def apply(name: Any)(`>R`: Ref[IO, `><`]): IO[Option[Unit]] =
+      def apply(name: Any)(`>R`: >*<): IO[Option[Unit]] =
         Deferred[IO, Option[Unit]].flatMap { offerer =>
           IO.uncancelable { poll =>
             `>R`.modify {
-              case it @ `><`(takers, _) if takers.nonEmpty =>
+              case it @ ><(takers, _) if takers.nonEmpty =>
                 val i = random.nextInt(takers.size)
                 val (taker, rest) = takers(i) -> (takers.take(i) ++ takers.drop(i+1))
                 it.copy(takers = rest) -> taker.complete(name).as(Some(()))
@@ -158,11 +160,11 @@ package object Π:
           }
         }
 
-      def apply(name: Any)(`>R`: Ref[IO, `><`])(code: => IO[Any]): IO[Option[Unit]] =
+      def apply(name: Any)(`>R`: >*<)(code: => IO[Any]): IO[Option[Unit]] =
         Deferred[IO, Option[Unit]].flatMap { offerer =>
           IO.uncancelable { poll =>
             `>R`.modify {
-              case it @ `><`(takers, _) if takers.nonEmpty =>
+              case it @ ><(takers, _) if takers.nonEmpty =>
                 val i = random.nextInt(takers.size)
                 val (taker, rest) = takers(i) -> (takers.take(i) ++ takers.drop(i+1))
                 it.copy(takers = rest) -> taker.complete(name).as(Some(()))
@@ -173,11 +175,11 @@ package object Π:
           }
         }
 
-      def apply()(`<R`: Ref[IO, `><`]): IO[Any] =
+      def apply()(`<R`: >*<): IO[Any] =
         Deferred[IO, Any].flatMap { taker =>
           IO.uncancelable { poll =>
             `<R`.modify {
-              case it @ `><`(_, offerers) if offerers.nonEmpty =>
+              case it @ ><(_, offerers) if offerers.nonEmpty =>
                 val i = random.nextInt(offerers.size)
                 val ((name, offerer), rest) = offerers(i) -> (offerers.take(i) ++ offerers.drop(i+1))
                 it.copy(offerers = rest) -> offerer.complete(Some(())).as(name)
@@ -188,11 +190,11 @@ package object Π:
           }
         }
 
-      def apply[T]()(`<R`: Ref[IO, `><`])(code: T => IO[T]): IO[Any] =
+      def apply[T]()(`<R`: >*<)(code: T => IO[T]): IO[Any] =
         Deferred[IO, Any].flatMap { taker =>
           IO.uncancelable { poll =>
             `<R`.modify {
-              case it @ `><`(_, offerers) if offerers.nonEmpty =>
+              case it @ ><(_, offerers) if offerers.nonEmpty =>
                 val i = random.nextInt(offerers.size)
                 val ((name, offerer), rest) = offerers(i) -> (offerers.take(i) ++ offerers.drop(i+1))
                 it.copy(offerers = rest) -> offerer.complete(Some(())).as(name)

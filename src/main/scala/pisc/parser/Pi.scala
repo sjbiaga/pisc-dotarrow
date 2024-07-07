@@ -46,9 +46,9 @@ class Pi extends Expression:
   def `μ.`: Parser[(μ, (Names, Names))] =
     "τ" ~> opt( expression ) ^^ { // silent prefix
       case Some((it, free)) =>
-        `τ`(Some(it)) -> (Names(), free)
+        τ(Some(it)) -> (Names(), free)
       case _ =>
-        `τ`(None) -> (Names(), Names())
+        τ(None) -> (Names(), Names())
     } |
     name~"<"~opt(name)~">" ~ opt( expression ) ^^ { // negative prefix i.e. output
       case (ch, _) ~ _ ~ _ ~ _ ~ _ if !ch.isSymbol =>
@@ -75,7 +75,7 @@ class Pi extends Expression:
         π(ch, par, polarity = true, None) -> (bound, name)
     }
 
-  def name: Parser[(λ, Names)] = ident ^^ { it => λ(Symbol(it)) -> Set(Symbol(it)) } |
+  def name: Parser[(λ, Names)] = ident ^^ { it => λ(Symbol(it)) -> LinkedHashSet(Symbol(it)) } |
                                  floatingPointNumber ^^ { it => λ(it) -> Names() } |
                                  stringLiteral ^^ { it => λ(it) -> Names() } |
                                  ( "True" | "False" ) ^^ { it => λ(it == "True") -> Names() } |

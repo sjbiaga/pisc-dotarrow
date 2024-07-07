@@ -11,23 +11,8 @@ import Language.Haskell.TH.Syntax
 import System.Process.Typed
 import System.Random
 
-import HaScalaM.Instances.Base
-import HaScalaM.Instances.Enums
-import HaScalaM.Instances.Pat
-import HaScalaM.Instances.Ref
-import HaScalaM.Instances.Stat
-import HaScalaM.Instances.Term
-import HaScalaM.Instances.Type
-import HaScalaM.Instances.Tilde
+import HaScalaM.Tree
 import HaScalaM.Instances.Show
-import HaScalaM.Types.Base
-import HaScalaM.Types.Enums
-import HaScalaM.Types.Pat
-import HaScalaM.Types.Ref
-import HaScalaM.Types.Stat
-import HaScalaM.Types.Term
-import HaScalaM.Types.Type
-import HaScalaM.Types.Tilde
 
 source =
 
@@ -164,9 +149,9 @@ gen :: ( p ~ SmPat
        ) => SmGeneratorE p t -> mi GeneratorType
 gen (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name))) (T'Ref (RT'Name (SmNameT' "Unit")))))
                   (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                    (SmArgClauseT [TTerm (SmBlockT [STerm (TApply (SmApplyT (TRef (RTName (SmNameT "println")))
-                                                                                            (SmArgClauseT [expr] Nothing)))
-                                                                   ])
+                                    (SmArgClauseT [TBlock (SmBlockT [STerm (TApply (SmApplyT (TRef (RTName (SmNameT "println")))
+                                                                                             (SmArgClauseT [expr] Nothing)))
+                                                                    ])
                                                   ] Nothing)))
     ) = do
         s <- randomIO
@@ -183,8 +168,9 @@ gen (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name))) (T'Ref (RT'Name
         return IOprintln
 gen (SmGeneratorE (PVar (SmVarP (SmNameT name)))
                   (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                    (SmArgClauseT [TTerm (SmBlockT [STerm (TApply (SmApplyT (TRef (RTName (SmNameT name')))
-                                                                                            (SmArgClauseT expr' Nothing)))])
+                                    (SmArgClauseT [TBlock (SmBlockT [STerm (TApply (SmApplyT (TRef (RTName (SmNameT name')))
+                                                                                             (SmArgClauseT expr' Nothing)))
+                                                                    ])
                                                   ] Nothing)))
     ) = do
         s'' <- replicateM n randomIO
@@ -204,7 +190,7 @@ gen (SmGeneratorE (PVar (SmVarP (SmNameT name)))
 gen (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name)))
                                   (T'Ref (RT'Name (SmNameT' type')))))
                   (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                    (SmArgClauseT [TTerm (SmBlockT [expr])] Nothing)))
+                                    (SmArgClauseT [TBlock (SmBlockT [expr])] Nothing)))
     ) = do
         s <- randomIO
         let r = rnd s
@@ -218,7 +204,7 @@ gen (SmGeneratorE (PPat (SmTypedP (PVar (SmVarP (SmNameT name)))
         return IObind
 gen (SmGeneratorE (PPat SmWildcardP)
                   (TRef (RTSelect (SmSelectRT (TApply (SmApplyT (TRef (RTName (SmNameT "IO")))
-                                                                (SmArgClauseT [TTerm (SmBlockT [])] Nothing)))
+                                                                (SmArgClauseT [TBlock (SmBlockT [])] Nothing)))
                                               (SmNameT "void"))))
     ) = ppr ("(NoBindS (AppE (VarE (Name (OccName \"return\") NameS)) " ++
                             "(ConE (Name (OccName \"()\") NameS)))" ++

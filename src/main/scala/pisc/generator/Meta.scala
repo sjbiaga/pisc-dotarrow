@@ -34,12 +34,12 @@ import java.util.UUID
 import scala.meta._
 import dialects.Scala3
 
-import parser.Calculus.{ `()`, Expr }
+import parser.Calculus.{ `(*)`, Expr }
 
 
 object Meta:
 
-  def defn(bind: `()`, prog: Term): Defn.Def =
+  def defn(bind: `(*)`, prog: Term): Defn.Def =
     val identifier = bind.identifier.asSymbol.name
     val params = bind.params.map(_.asSymbol.name)
 
@@ -50,7 +50,7 @@ object Meta:
                prog)
     else
       Defn.Def(Nil,
-               identifier, `()`(params*), `: IO[Unit]`,
+               identifier, `(…)`(params*), `: IO[Unit]`,
                prog)
 
 
@@ -93,7 +93,7 @@ object Meta:
                        None) :: Nil
     ) :: Nil
 
-  def `()`(* : String*) =
+  def `(…)`(* : String*) =
     Member.ParamClauseGroup(
       Type.ParamClause(Nil),
       Term.ParamClause(*
@@ -127,6 +127,8 @@ object Meta:
 
 
   val `_ <- IO.unit` = `_ <- IO.*`("unit")
+
+  val `IO.cede` = Term.Select("IO", "cede")
 
 
   def `_ <- *`(* : Term): Enumerator.Generator =
@@ -233,5 +235,6 @@ object Meta:
                )
     )
 
+
   val `()(null)`: Term =
-    Term.Apply(Term.Name("()"), Term.ArgClause(List(Lit.Null()), None))
+    Term.Apply(\("()"), Term.ArgClause(Lit.Null() :: Nil, None))

@@ -34,7 +34,7 @@ import scala.meta._
 import dialects.Scala3
 
 import parser.Calculus._
-import generator.Meta.{ `()` => _, _ }
+import generator.Meta._
 
 
 object Program:
@@ -52,7 +52,7 @@ object Program:
       // SUMMATION /////////////////////////////////////////////////////////////
 
       case `∅` =>
-        val ** = List(`_ <- IO.unit`)
+        val ** = `_ <- IO.unit`
 
         semaphore
           .map(* :+= `_ <- *.tryAcquire.ifM`(_, **))
@@ -75,7 +75,7 @@ object Program:
       case `+`(operand, _*) =>
         * = body(operand)
 
-      case _: `+` => ???
+      case _: `+` => ??? // ∅ - caught by parser
 
       ///////////////////////////////////////////////////////////// summation //
 
@@ -85,7 +85,7 @@ object Program:
       case it: `|` if it.components.size > 1 =>
         val ios = it.components.foldLeft(List[Term]())(_ :+ body(_)())
 
-        val ** = List(`_ <- *`(`( *, … ).parMapN { (_, …) => }`(ios*)))
+        val ** = `_ <- *`(`( *, … ).parMapN { (_, …) => }`(ios*))
 
         semaphore
           .map(* :+= `_ <- *.tryAcquire.ifM`(_, **))
@@ -113,18 +113,18 @@ object Program:
 
       // RESTRICTION | PREFIXES ////////////////////////////////////////////////
 
-      case ν(λ(Symbol(name))) =>
-        * = `* <- *`(name -> "ν")
+      case ν(names*) =>
+        * = names.map { it => `* <- *`(it -> "ν") }.toList
 
-      case `τ`(Some(Left(enums))) =>
+      case τ(Some(Left(enums))) =>
         * :+= `_ <- *`("τ")
         * ++= enums
 
-      case `τ`(Some(Right(term))) =>
+      case τ(Some(Right(term))) =>
         * :+= `_ <- *`("τ")
         * :+= `_ <- IO { * }`(term)
 
-      case `τ`(_) =>
+      case τ(_) =>
         * = `_ <- *`("τ")
 
 
@@ -214,23 +214,23 @@ object Program:
       case `!`(Some(π @ π(_, λ(Symbol(par)), true, _)), sum) =>
         val uuid = id
 
-        val `!.πP` = body(π)() :+ `_ <- *`(s"$uuid($par)".parse[Term].get)
+        val `!.π⋯` = body(π)() :+ `_ <- *`(s"$uuid($par)".parse[Term].get)
 
         val it =
           `for * yield ()`(
             `_ <- *` {
               Term.If(Term.ApplyUnary("!", par),
-                      Term.Select("IO", "cede"),
+                      `IO.cede`,
                       `( *, … ).parMapN { (_, …) => }`(
                         `for * yield ()`(body(sum)()*),
-                        `for * yield ()`(`!.πP`*)
+                        `for * yield ()`(`!.π⋯`*)
                       )
               )
             }
           )
 
         * :+= `* <- *`(uuid -> `IO { def *(*: ()): IO[Unit] = …; * }`(uuid -> par, it))
-        * ++= `!.πP`
+        * ++= `!.π⋯`
 
       case `!`(Some(μ), sum) =>
         val uuid = id
@@ -240,10 +240,10 @@ object Program:
           case it @ Enumerator.Generator(Pat.Wildcard(), _) =>
             it.copy(pat = Pat.Var(uuid2))
 
-        val `!.μP` = `body(μ)()` :: `_ <- *` { Term.If(Term.ApplyInfix(\(uuid2), \("eq"),
+        val `!.μ⋯` = `body(μ)()` :: `_ <- *` { Term.If(Term.ApplyInfix(\(uuid2), \("eq"),
                                                                        Type.ArgClause(Nil),
                                                                        Term.ArgClause(List(\("None")), None)),
-                                                       Term.Select("IO", "cede"),
+                                                       `IO.cede`,
                                                        uuid,
                                                        Nil)
                                              } :: Nil
@@ -253,13 +253,13 @@ object Program:
             `_ <- *` {
               `( *, … ).parMapN { (_, …) => }`(
                 `for * yield ()`(body(sum)()*),
-                `for * yield ()`(`!.μP`*)
+                `for * yield ()`(`!.μ⋯`*)
               )
             }
           )
 
         * :+= `* <- *`(uuid -> `IO { lazy val *: IO[Unit] = …; * }`(uuid, it))
-        * ++= `!.μP`
+        * ++= `!.μ⋯`
 
       case `!`(_, sum) =>
         val uuid = id
@@ -282,7 +282,7 @@ object Program:
 
       // AGENT CALL ////////////////////////////////////////////////////////////
 
-      case `()`(λ(Symbol(identifier)), qual, params*) =>
+      case `(*)`(λ(Symbol(identifier)), qual, params*) =>
         val args = params.map {
           case λ(Symbol(name)) => name
           case λ(value) =>
@@ -299,7 +299,7 @@ object Program:
         else
           * :+= `_ <- *`(s"${qual.mkString(".")}.`π`.`$identifier`(${args.mkString(", ")})".parse[Term].get)
 
-      case _: `()` => ??? // impossible by syntax
+      case _: `(*)` => ??? // impossible by syntax
 
       //////////////////////////////////////////////////////////// agent call //
 
