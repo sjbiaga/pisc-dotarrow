@@ -128,8 +128,8 @@ object π:
   }
 
   def Sc2Hs(s2: `()`, hs: `()`): IO[Unit] = for {
-    _c9d7d140_0ab3_459a_9048_372ecd525477 <- IO {
-      def _c9d7d140_0ab3_459a_9048_372ecd525477(src: `()`): IO[Unit] =
+    _a981ae67_ffc1_4d74_be1b_71597901d095 <- IO {
+      def _a981ae67_ffc1_4d74_be1b_71597901d095(src: `()`): IO[Unit] =
         if (!src) IO.cede
         else (
           for {
@@ -141,18 +141,18 @@ object π:
           } yield (),
           for {
             src <- s2()(s2h)
-            _   <- _c9d7d140_0ab3_459a_9048_372ecd525477(src)
+            _   <- _a981ae67_ffc1_4d74_be1b_71597901d095(src)
           } yield ()
         ).parMapN { (_, _) => }
-      _c9d7d140_0ab3_459a_9048_372ecd525477
+      _a981ae67_ffc1_4d74_be1b_71597901d095
     }
     src                                   <- s2()(s2h)
-    _ <- _c9d7d140_0ab3_459a_9048_372ecd525477(src)
+    _ <- _a981ae67_ffc1_4d74_be1b_71597901d095(src)
   } yield ()
 
   def Hs2Sc(h2: `()`, sc: `()`): IO[Unit] = for {
-    _edbf86b4_2dde_42b1_896c_3693146a98f9 <- IO {
-      def _edbf86b4_2dde_42b1_896c_3693146a98f9(src: `()`): IO[Unit] =
+    _88a66280_04ce_4581_87b2_c02d3e6a5df4 <- IO {
+      def _88a66280_04ce_4581_87b2_c02d3e6a5df4(src: `()`): IO[Unit] =
         if (!src) IO.cede
         else (
           for {
@@ -164,18 +164,18 @@ object π:
           } yield (),
           for {
             src <- h2()(h2s)
-            _   <- _edbf86b4_2dde_42b1_896c_3693146a98f9(src)
+            _   <- _88a66280_04ce_4581_87b2_c02d3e6a5df4(src)
           } yield ()
         ).parMapN { (_, _) => }
-      _edbf86b4_2dde_42b1_896c_3693146a98f9
+      _88a66280_04ce_4581_87b2_c02d3e6a5df4
     }
     src                                   <- h2()(h2s)
-    _ <- _edbf86b4_2dde_42b1_896c_3693146a98f9(src)
+    _ <- _88a66280_04ce_4581_87b2_c02d3e6a5df4(src)
   } yield ()
 
   def Aeson(hs: `()`, h2: `()`, ch: `()`): IO[Unit] = for {
-    _b2ce7f7d_4542_4eae_a24d_cd2979cdbb15 <- IO {
-      def _b2ce7f7d_4542_4eae_a24d_cd2979cdbb15(code: `()`): IO[Unit] =
+    _4e55034a_87a2_4c19_8419_ebd9831f039f <- IO {
+      def _4e55034a_87a2_4c19_8419_ebd9831f039f(code: `()`): IO[Unit] =
         if (!code) IO.cede
         else (
           if (code.nonEmpty ==== true) for {
@@ -188,18 +188,18 @@ object π:
           else for (_ <- ch(ch)) yield (),
           for {
             code <- hs()(h2h)
-            _    <- _b2ce7f7d_4542_4eae_a24d_cd2979cdbb15(code)
+            _    <- _4e55034a_87a2_4c19_8419_ebd9831f039f(code)
           } yield ()
         ).parMapN { (_, _) => }
-      _b2ce7f7d_4542_4eae_a24d_cd2979cdbb15
+      _4e55034a_87a2_4c19_8419_ebd9831f039f
     }
     code                                  <- hs()(h2h)
-    _ <- _b2ce7f7d_4542_4eae_a24d_cd2979cdbb15(code)
+    _ <- _4e55034a_87a2_4c19_8419_ebd9831f039f(code)
   } yield ()
 
   def Circe(sc: `()`, s2: `()`, ch: `()`): IO[Unit] = for {
-    _544881d4_3774_444c_9458_8135246f7319 <- IO {
-      def _544881d4_3774_444c_9458_8135246f7319(code: `()`): IO[Unit] =
+    _6e8b12d8_a14e_4397_ae19_4317e9746abb <- IO {
+      def _6e8b12d8_a14e_4397_ae19_4317e9746abb(code: `()`): IO[Unit] =
         if (!code) IO.cede
         else (
           if (code.nonEmpty ==== true) for {
@@ -212,13 +212,13 @@ object π:
           else for (_ <- ch(ch)) yield (),
           for {
             code <- sc()(s2s)
-            _    <- _544881d4_3774_444c_9458_8135246f7319(code)
+            _    <- _6e8b12d8_a14e_4397_ae19_4317e9746abb(code)
           } yield ()
         ).parMapN { (_, _) => }
-      _544881d4_3774_444c_9458_8135246f7319
+      _6e8b12d8_a14e_4397_ae19_4317e9746abb
     }
     code                                  <- sc()(s2s)
-    _ <- _544881d4_3774_444c_9458_8135246f7319(code)
+    _ <- _6e8b12d8_a14e_4397_ae19_4317e9746abb(code)
   } yield ()
 
   def Start(src: `()`, s2: `()`, ch: `()`): IO[Unit] = for {

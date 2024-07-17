@@ -28,9 +28,9 @@
 
 package object Π:
 
-  import cats.effect.{ Deferred, Ref, IO }
-  import cats.effect.kernel.Outcome.Succeeded
-  import cats.effect.std.Supervisor
+  import _root_.cats.effect.{ Deferred, Ref, IO }
+  import _root_.cats.effect.kernel.Outcome.Succeeded
+  import _root_.cats.effect.std.Supervisor
 
   import `Π-magic`._
 
@@ -141,7 +141,7 @@ package object Π:
 
       inline def apply(): >< = ><(Nil, Nil)
 
-      import scala.util.Random
+      import _root_.scala.util.Random
 
       private val random = Random()
 

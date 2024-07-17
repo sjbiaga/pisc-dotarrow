@@ -18,7 +18,7 @@ function pi() {
     done
     set ../pi.scala ${srcs#?}
     scala-cli run "$@" \
-                  -q -O -nowarn -S 3.5.0-RC1 \
+                  -q -O -nowarn -S 3.5.0-RC4 \
                   --dep org.typelevel::cats-effect:3.6-0142603 \
                   ${args#?} \
                   2>&1
@@ -42,7 +42,7 @@ function pi_() {
     done
     set ../pi_.scala ${srcs#?}
     scala-cli run "$@" \
-                  -q -O -nowarn -S 3.5.0-RC1 \
+                  -q -O -nowarn -S 3.5.0-RC4 \
                   --dep org.typelevel::cats-effect:3.6-0142603 \
                   ${args#?} \
                   2>&1
@@ -139,7 +139,7 @@ function dotarrowScalaToHaskell() {
     local app="../$x/sc2hs"
     local p="`readlink -m \"$x/tmp/$1\"`"
     local q="`readlink -m \"$x/tmp/$2\"`"
-    scala-cli run -S 3.5.0-RC1 "../$x/source.scala" -- "$x/$2.scala"
+    scala-cli run -S 3.5.0-RC4 "../$x/source.scala" -- "$x/$2.scala"
     mkdir -p "$p/tmp"; rm -fr "$p/tmp/sc2hs" &>/dev/null; cp -r "$app" "$p/tmp"
     local hs="`cat \"$x/src/$2.scala.src\" | Scalameta2Haskell.pl`"
     pushd "$p/tmp/sc2hs" &>/dev/null

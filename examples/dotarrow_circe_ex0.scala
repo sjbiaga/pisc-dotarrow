@@ -109,8 +109,8 @@ object π:
     ch <- ν
     _  <- (
       for {
-        _29f5e792_3f42_4108_8d75_01ee39a0b63b <- IO {
-          def _29f5e792_3f42_4108_8d75_01ee39a0b63b(code: `()`): IO[Unit] =
+        _8d0a866a_127a_4911_9309_ac7fe9510f63 <- IO {
+          def _8d0a866a_127a_4911_9309_ac7fe9510f63(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -123,13 +123,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run)
-                _    <- _29f5e792_3f42_4108_8d75_01ee39a0b63b(code)
+                _    <- _8d0a866a_127a_4911_9309_ac7fe9510f63(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _29f5e792_3f42_4108_8d75_01ee39a0b63b
+          _8d0a866a_127a_4911_9309_ac7fe9510f63
         }
         code                                  <- ch()(run)
-        _ <- _29f5e792_3f42_4108_8d75_01ee39a0b63b(code)
+        _ <- _8d0a866a_127a_4911_9309_ac7fe9510f63(code)
       } yield (),
       Init(s"""sh -c 'cat "dotarrow/${args(0)}.scala"'""".!!, ch)
     ).parMapN { (_, _) => }

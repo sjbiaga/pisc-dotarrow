@@ -107,8 +107,8 @@ object π:
     ch <- ν
     _  <- (
       for {
-        _d1f423ee_7903_4344_a422_09eb437992bf <- IO {
-          def _d1f423ee_7903_4344_a422_09eb437992bf(code: `()`): IO[Unit] =
+        _50ffdf8a_ee9b_40f2_a371_08793dcb7435 <- IO {
+          def _50ffdf8a_ee9b_40f2_a371_08793dcb7435(code: `()`): IO[Unit] =
             if (!code) IO.cede
             else (
               if (code.nonEmpty ==== true) for {
@@ -121,13 +121,13 @@ object π:
               else for (_ <- ch(`()`(null))) yield (),
               for {
                 code <- ch()(run)
-                _    <- _d1f423ee_7903_4344_a422_09eb437992bf(code)
+                _    <- _50ffdf8a_ee9b_40f2_a371_08793dcb7435(code)
               } yield ()
             ).parMapN { (_, _) => }
-          _d1f423ee_7903_4344_a422_09eb437992bf
+          _50ffdf8a_ee9b_40f2_a371_08793dcb7435
         }
         code                                  <- ch()(run)
-        _ <- _d1f423ee_7903_4344_a422_09eb437992bf(code)
+        _ <- _50ffdf8a_ee9b_40f2_a371_08793dcb7435(code)
       } yield (),
       for {
         _ <- τ
